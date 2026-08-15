@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ExamAssessment, StudentResult, Subject, Student } from '../types/sms';
 import { Award, Plus, Search, FileText, CheckCircle2, TrendingUp, Download, Eye, X, BookOpen } from 'lucide-react';
+import { SchoolLogo } from './SchoolLogo';
 
 interface ExamsManagerProps {
   exams: ExamAssessment[];
@@ -243,11 +244,7 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
             {/* Report Header */}
             <div className="text-center border-b-2 border-slate-300 pb-4 mb-4">
               <div className="flex items-center justify-center space-x-3 mb-1">
-                <img
-                  src="/assets/vipulanatha-college-logo.png"
-                  alt="VipulanAntha College Colombo"
-                  className="w-12 h-12 sm:w-14 sm:h-14 object-contain shrink-0"
-                />
+                <SchoolLogo size="sm" showGlowRing={false} className="w-12 h-12 sm:w-14 sm:h-14 shrink-0" />
                 <div className="text-left">
                   <div className="text-[10px] sm:text-[11px] font-bold text-amber-700 uppercase tracking-widest font-sans">
                     MINISTRY OF EDUCATION • SRI LANKA

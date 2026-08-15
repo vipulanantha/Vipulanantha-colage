@@ -1,10 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
+import bundledOfficialLogo from '../assets/vipulanatha-college-logo.png';
+
+export const DEFAULT_LOGO = '/assets/vipulanatha-college-logo.png';
 
 interface SchoolLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'intro';
   showGlowRing?: boolean;
   className?: string;
   id?: string;
+  customLogoUrl?: string | null;
 }
 
 export const SchoolLogo: React.FC<SchoolLogoProps> = ({
@@ -12,7 +16,30 @@ export const SchoolLogo: React.FC<SchoolLogoProps> = ({
   showGlowRing = true,
   className = '',
   id = 'school-logo-component',
+  customLogoUrl,
 }) => {
+  // If customLogoUrl (e.g. from Supabase Storage) is valid and non-empty, use it; otherwise default logo
+  const initialSource = customLogoUrl && customLogoUrl.trim().length > 0 ? customLogoUrl : DEFAULT_LOGO;
+  const [imgSrc, setImgSrc] = useState<string>(initialSource);
+  const [hasFailed, setHasFailed] = useState(false);
+
+  React.useEffect(() => {
+    if (customLogoUrl && customLogoUrl.trim().length > 0) {
+      setImgSrc(customLogoUrl);
+      setHasFailed(false);
+    } else {
+      setImgSrc(DEFAULT_LOGO);
+    }
+  }, [customLogoUrl]);
+
+  const handleImageError = () => {
+    // If the image fails (e.g. broken Supabase URL or network glitch), fall back to bundled official logo
+    if (!hasFailed) {
+      setHasFailed(true);
+      setImgSrc(bundledOfficialLogo || DEFAULT_LOGO);
+    }
+  };
+
   // Size mapping matching the Immersive UI proportions
   const sizeMap = {
     sm: {
@@ -87,9 +114,10 @@ export const SchoolLogo: React.FC<SchoolLogoProps> = ({
         className={`relative z-10 w-full h-full bg-white rounded-full shadow-2xl flex items-center justify-center ${currentSize.borderThickness} border-white overflow-hidden`}
       >
         <img
-          src="/assets/vipulanatha-college-logo.png"
+          src={imgSrc}
           alt="VipulanAntha College Colombo"
           className={`${currentSize.img} object-contain`}
+          onError={handleImageError}
           draggable={false}
         />
       </div>
