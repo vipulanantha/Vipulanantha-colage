@@ -1,0 +1,6 @@
+{
+  "name": "Vipulanantha College Colombo - SMS Login",
+  "description": "Official School Management System login portal for Vipulanantha College Colombo (ESTD 1920) with sophisticated purple, royal blue, and gold styling and animated entry.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

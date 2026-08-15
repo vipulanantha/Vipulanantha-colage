@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+}
+
+.font-cinzel {
+  font-family: 'Cinzel', serif;
+}
+
+.font-tamil {
+  font-family: 'Noto Sans Tamil', sans-serif;
+}
+
+.font-outfit {
+  font-family: 'Outfit', sans-serif;
+}
+
+/* Immersive UI Glow & Rotation Animations */
+@keyframes slow-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes reverse-slow-rotate {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes golden-pulse {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(0.96);
+    filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.4));
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.03);
+    filter: drop-shadow(0 0 36px rgba(212, 175, 55, 0.65));
+  }
+}
+
+@keyframes logo-intro-scale {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes text-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes card-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes float-subtle {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-slow-rotate {
+  animation: slow-rotate 12s linear infinite;
+}
+
+.animate-reverse-slow-rotate {
+  animation: reverse-slow-rotate 16s linear infinite;
+}
+
+.animate-golden-pulse {
+  animation: golden-pulse 4s ease-in-out infinite;
+}
+
+.animate-logo-intro {
+  animation: logo-intro-scale 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-text-reveal {
+  animation: text-reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-card-reveal {
+  animation: card-reveal 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-float-subtle {
+  animation: float-subtle 6s ease-in-out infinite;
+}
+
+/* Immersive Glassmorphic & Shadow Presets */
+.immersive-glass {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 32px 64px -16px rgba(30, 58, 138, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+.immersive-glow-gold {
+  background: linear-gradient(135deg, #D4AF37 0%, #F3E5AB 50%, #D4AF37 100%);
+}
+
+.gold-gradient-text {
+  background: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #F59E0B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+
