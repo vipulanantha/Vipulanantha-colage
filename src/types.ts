@@ -1,4 +1,4 @@
-export type PortalRole = 'staff' | 'student' | 'parent' | 'admin';
+export type PortalRole = 'staff' | 'student' | 'parent' | 'admin' | 'principal' | 'accountant' | 'librarian';
 
 export interface UserSession {
   username: string;

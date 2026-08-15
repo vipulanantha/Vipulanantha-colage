@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 interface SchoolLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'intro';
@@ -13,8 +13,6 @@ export const SchoolLogo: React.FC<SchoolLogoProps> = ({
   className = '',
   id = 'school-logo-component',
 }) => {
-  const [imgError, setImgError] = useState(false);
-
   // Size mapping matching the Immersive UI proportions
   const sizeMap = {
     sm: {
@@ -88,31 +86,15 @@ export const SchoolLogo: React.FC<SchoolLogoProps> = ({
       <div
         className={`relative z-10 w-full h-full bg-white rounded-full shadow-2xl flex items-center justify-center ${currentSize.borderThickness} border-white overflow-hidden`}
       >
-        {!imgError ? (
-          <img
-            src="/school-logo.jpg"
-            alt="Vipulanantha College Colombo Official Crest - ESTD 1920"
-            className={`${currentSize.img} object-contain`}
-            referrerPolicy="no-referrer"
-            onError={() => setImgError(true)}
-            draggable={false}
-          />
-        ) : (
-          <div className="w-full h-full rounded-full bg-gradient-to-br from-indigo-950 via-purple-900 to-blue-950 p-2 flex flex-col items-center justify-center text-center text-amber-200">
-            <div className="text-[10px] sm:text-xs font-cinzel font-bold tracking-wider text-amber-300">
-              VIPULANANTHA
-            </div>
-            <div className="my-1 w-6 h-6 rounded-full bg-amber-500/20 border border-amber-300 flex items-center justify-center text-amber-300">
-              🪔
-            </div>
-            <div className="text-[8px] sm:text-[9px] font-semibold text-white">ESTD 1920</div>
-            <div className="text-[7px] sm:text-[8px] font-tamil text-amber-300 mt-0.5">
-              நாளும் பயில்வோம் நற்பணி புரிவோம்
-            </div>
-          </div>
-        )}
+        <img
+          src="/assets/vipulanatha-college-logo.png"
+          alt="VipulanAntha College Colombo"
+          className={`${currentSize.img} object-contain`}
+          draggable={false}
+        />
       </div>
     </div>
   );
 };
+
 

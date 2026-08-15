@@ -14,6 +14,9 @@ import {
   Sparkles,
   AlertCircle,
   HelpCircle,
+  Landmark,
+  DollarSign,
+  BookMarked,
 } from 'lucide-react';
 
 interface LoginCardProps {
@@ -45,15 +48,39 @@ const DEMO_CREDENTIALS: Record<PortalRole, DemoCredential> = {
     badge: 'Parent',
     username: 'parent.kumar@vipulanantha.sch.lk',
     roleTitle: 'Guardian / Parent',
-    departmentOrGrade: 'Student: K. Saravanan (10-B)',
+    departmentOrGrade: 'Student: Suresh Kumar (11-A)',
   },
   admin: {
     role: 'admin',
     label: 'Administrator',
     badge: 'Admin',
     username: 'admin.office@vipulanantha.sch.lk',
-    roleTitle: 'Principal & Registrar Office',
+    roleTitle: 'Administrative Office & Registrar',
     departmentOrGrade: 'Executive Administration',
+  },
+  principal: {
+    role: 'principal',
+    label: 'Principal Office',
+    badge: 'Principal',
+    username: 'principal@vipulanantha.sch.lk',
+    roleTitle: 'College Principal & Rector',
+    departmentOrGrade: 'Executive Board of Governors',
+  },
+  accountant: {
+    role: 'accountant',
+    label: 'Bursar & Finance',
+    badge: 'Bursar',
+    username: 'bursar@vipulanantha.sch.lk',
+    roleTitle: 'Head Accountant & Bursar',
+    departmentOrGrade: 'Finance & Accounts Division',
+  },
+  librarian: {
+    role: 'librarian',
+    label: 'Library & Archives',
+    badge: 'Librarian',
+    username: 'library@vipulanantha.sch.lk',
+    roleTitle: 'Chief Librarian & Curator',
+    departmentOrGrade: 'Swami Vipulananda Memorial Library',
   },
 };
 
@@ -113,7 +140,13 @@ export const LoginCard: React.FC<LoginCardProps> = ({
             ? 'K. Saravanan'
             : selectedRole === 'parent'
             ? 'Mr. S. Kumaravel'
-            : 'Principal Desk / Registrar',
+            : selectedRole === 'principal'
+            ? 'Prof. S. Sivakumaran (Principal)'
+            : selectedRole === 'accountant'
+            ? 'Mr. M. Thavanesan (Bursar)'
+            : selectedRole === 'librarian'
+            ? 'Mrs. R. Vani (Librarian)'
+            : 'Administrative Office / Registrar',
         role: selectedRole,
         roleTitle: cred.roleTitle,
         departmentOrGrade: cred.departmentOrGrade,
@@ -124,6 +157,12 @@ export const LoginCard: React.FC<LoginCardProps> = ({
             ? 'KS'
             : selectedRole === 'parent'
             ? 'SK'
+            : selectedRole === 'principal'
+            ? 'SS'
+            : selectedRole === 'accountant'
+            ? 'MT'
+            : selectedRole === 'librarian'
+            ? 'RV'
             : 'VC',
         lastLogin: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
@@ -170,15 +209,18 @@ export const LoginCard: React.FC<LoginCardProps> = ({
             Select Portal Access
           </label>
           <div
-            className="grid grid-cols-4 gap-1 p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80 text-xs"
+            className="grid grid-cols-4 sm:grid-cols-7 gap-1 p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80 text-xs"
             role="tablist"
             aria-label="Portal Selection"
           >
             {[
-              { id: 'staff', label: 'Staff', icon: Briefcase },
+              { id: 'principal', label: 'Principal', icon: Landmark },
+              { id: 'admin', label: 'Admin', icon: ShieldCheck },
+              { id: 'staff', label: 'Faculty', icon: Briefcase },
               { id: 'student', label: 'Student', icon: GraduationCap },
               { id: 'parent', label: 'Parent', icon: Users },
-              { id: 'admin', label: 'Admin', icon: ShieldCheck },
+              { id: 'accountant', label: 'Bursar', icon: DollarSign },
+              { id: 'librarian', label: 'Library', icon: BookMarked },
             ].map((tab) => {
               const Icon = tab.icon;
               const isSelected = selectedRole === tab.id;
@@ -190,14 +232,14 @@ export const LoginCard: React.FC<LoginCardProps> = ({
                   role="tab"
                   aria-selected={isSelected}
                   onClick={() => handleRoleChange(tab.id as PortalRole)}
-                  className={`min-h-[46px] sm:min-h-[44px] flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all font-medium cursor-pointer touch-manipulation active:scale-95 ${
+                  className={`min-h-[46px] sm:min-h-[44px] flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all font-medium cursor-pointer touch-manipulation active:scale-95 ${
                     isSelected
                       ? 'bg-gradient-to-b from-[#3B185F] to-[#2A0845] text-white shadow-md shadow-purple-950/20 font-semibold'
                       : 'text-slate-600 hover:text-purple-900 hover:bg-white/60'
                   }`}
                 >
                   <Icon className={`w-3.5 h-3.5 mb-1 shrink-0 ${isSelected ? 'text-amber-300' : 'text-slate-400'}`} />
-                  <span className="text-[11px] font-medium leading-none truncate w-full text-center">{tab.label}</span>
+                  <span className="text-[10px] sm:text-[11px] font-medium leading-none truncate w-full text-center">{tab.label}</span>
                 </button>
               );
             })}
