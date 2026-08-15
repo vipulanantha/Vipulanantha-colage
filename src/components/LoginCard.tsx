@@ -135,15 +135,15 @@ export const LoginCard: React.FC<LoginCardProps> = ({
   return (
     <div
       id="login-card-container"
-      className="w-full max-w-[440px] mx-auto bg-white/90 backdrop-blur-2xl rounded-3xl shadow-[0_32px_64px_-16px_rgba(42,8,69,0.2)] border border-purple-100/90 overflow-hidden text-slate-800 transition-all duration-300 hover:shadow-[0_36px_72px_-16px_rgba(42,8,69,0.26)]"
+      className="w-full max-w-[440px] mx-auto bg-white/95 sm:bg-white/90 backdrop-blur-2xl rounded-2xl sm:rounded-3xl shadow-[0_20px_50px_rgba(42,8,69,0.18)] sm:shadow-[0_32px_64px_-16px_rgba(42,8,69,0.2)] border border-purple-100/90 overflow-hidden text-slate-800 transition-all duration-300 hover:shadow-[0_36px_72px_-16px_rgba(42,8,69,0.26)]"
     >
       {/* Top Ornamental Gold & Purple Accent Ribbon */}
-      <div className="h-2.5 bg-gradient-to-r from-[#2A0845] via-[#D4AF37] to-[#1E3A8A] w-full shadow-sm" />
+      <div className="h-2 sm:h-2.5 bg-gradient-to-r from-[#2A0845] via-[#D4AF37] to-[#1E3A8A] w-full shadow-sm" />
 
-      <div className="p-6 sm:p-8">
+      <div className="p-5 sm:p-8">
         {/* Header with Small School Logo at top */}
-        <div className="text-center mb-6">
-          <div className="flex justify-center mb-3">
+        <div className="text-center mb-5 sm:mb-6">
+          <div className="flex justify-center mb-2.5 sm:mb-3">
             <SchoolLogo size="md" showGlowRing={true} id="card-school-logo" />
           </div>
 
@@ -165,7 +165,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({
         </div>
 
         {/* Portal Role Tabs */}
-        <div className="mb-5">
+        <div className="mb-4 sm:mb-5">
           <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 text-center">
             Select Portal Access
           </label>
@@ -190,14 +190,14 @@ export const LoginCard: React.FC<LoginCardProps> = ({
                   role="tab"
                   aria-selected={isSelected}
                   onClick={() => handleRoleChange(tab.id as PortalRole)}
-                  className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all font-medium cursor-pointer ${
+                  className={`min-h-[46px] sm:min-h-[44px] flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all font-medium cursor-pointer touch-manipulation active:scale-95 ${
                     isSelected
                       ? 'bg-gradient-to-b from-[#3B185F] to-[#2A0845] text-white shadow-md shadow-purple-950/20 font-semibold'
                       : 'text-slate-600 hover:text-purple-900 hover:bg-white/60'
                   }`}
                 >
-                  <Icon className={`w-3.5 h-3.5 mb-1 ${isSelected ? 'text-amber-300' : 'text-slate-400'}`} />
-                  <span className="text-[11px] truncate w-full text-center">{tab.label}</span>
+                  <Icon className={`w-3.5 h-3.5 mb-1 shrink-0 ${isSelected ? 'text-amber-300' : 'text-slate-400'}`} />
+                  <span className="text-[11px] font-medium leading-none truncate w-full text-center">{tab.label}</span>
                 </button>
               );
             })}
@@ -205,11 +205,11 @@ export const LoginCard: React.FC<LoginCardProps> = ({
         </div>
 
         {/* Quick Demo Pill Helper */}
-        <div className="mb-4 flex items-center justify-between bg-amber-50/70 border border-amber-200/80 rounded-xl px-3 py-1.5 text-xs text-amber-900">
+        <div className="mb-4 flex items-center justify-between bg-amber-50/80 border border-amber-200/90 rounded-xl px-3 py-2 text-xs text-amber-900 shadow-xs">
           <div className="flex items-center space-x-1.5 truncate">
             <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
             <span className="text-[11px] text-amber-800 truncate">
-              Demo Active: <strong className="font-semibold text-amber-950">{DEMO_CREDENTIALS[selectedRole].label}</strong>
+              Demo: <strong className="font-semibold text-amber-950">{DEMO_CREDENTIALS[selectedRole].label}</strong>
             </span>
           </div>
           <button
@@ -219,7 +219,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({
               setPassword('Vipulanantha#1920');
               setErrorMessage('');
             }}
-            className="text-[10px] font-bold text-purple-900 bg-amber-200/80 hover:bg-amber-300 px-2 py-0.5 rounded-md transition-colors cursor-pointer shrink-0 ml-1"
+            className="text-[11px] font-bold text-purple-900 bg-amber-200/90 hover:bg-amber-300 active:bg-amber-400 px-2.5 py-1 rounded-lg transition-colors cursor-pointer shrink-0 ml-1.5 min-h-[30px] flex items-center touch-manipulation"
           >
             Auto Fill
           </button>
@@ -270,7 +270,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({
                     ? 'e.g. VC/2024/0482'
                     : 'user@vipulanantha.sch.lk'
                 }
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#3B185F] focus:border-[#3B185F] transition-all shadow-xs"
+                className="w-full pl-10 pr-4 py-3 sm:py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-base sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#3B185F] focus:border-[#3B185F] transition-all shadow-xs"
               />
             </div>
           </div>
@@ -304,14 +304,14 @@ export const LoginCard: React.FC<LoginCardProps> = ({
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyUp={handleKeyUp}
                 placeholder="Enter your password"
-                className="w-full pl-10 pr-11 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#3B185F] focus:border-[#3B185F] transition-all shadow-xs"
+                className="w-full pl-10 pr-12 py-3 sm:py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-base sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#3B185F] focus:border-[#3B185F] transition-all shadow-xs"
               />
               <button
                 type="button"
                 id="toggle-password-visibility-btn"
                 onClick={() => setShowPassword(!showPassword)}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
-                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-purple-900 focus:outline-none cursor-pointer transition-colors"
+                className="absolute inset-y-0 right-0 w-12 flex items-center justify-center text-slate-400 hover:text-purple-900 focus:outline-none cursor-pointer transition-colors touch-manipulation"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -320,7 +320,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({
 
           {/* Remember Me Checkbox & Forgot Password Link */}
           <div className="flex items-center justify-between text-xs pt-1">
-            <label className="flex items-center space-x-2 cursor-pointer select-none">
+            <label className="flex items-center space-x-2 cursor-pointer select-none min-h-[44px] py-1 touch-manipulation">
               <input
                 id="remember-me-checkbox"
                 type="checkbox"
@@ -328,14 +328,14 @@ export const LoginCard: React.FC<LoginCardProps> = ({
                 onChange={(e) => setRememberMe(e.target.checked)}
                 className="w-4 h-4 rounded text-[#3B185F] focus:ring-[#3B185F] border-slate-300 accent-[#3B185F] cursor-pointer"
               />
-              <span className="text-slate-600 font-medium text-xs">Remember me</span>
+              <span className="text-slate-700 font-medium text-xs">Remember me</span>
             </label>
 
             <button
               id="forgot-password-link"
               type="button"
               onClick={onOpenForgotPassword}
-              className="text-[#3B185F] hover:text-[#1E3A8A] font-semibold hover:underline focus:outline-none cursor-pointer transition-colors"
+              className="text-[#3B185F] hover:text-[#1E3A8A] font-semibold hover:underline focus:outline-none cursor-pointer transition-colors min-h-[44px] flex items-center px-1 touch-manipulation"
             >
               Forgot password?
             </button>
@@ -346,7 +346,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({
             id="login-submit-btn"
             type="submit"
             disabled={isLoading}
-            className="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-[#2A0845] via-[#3B185F] to-[#1E3A8A] hover:from-[#200535] hover:via-[#30124f] hover:to-[#172e6e] text-white font-bold text-sm tracking-wide shadow-lg shadow-purple-950/25 hover:shadow-xl hover:shadow-purple-950/30 active:scale-[0.99] transition-all flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed group"
+            className="w-full min-h-[48px] py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#2A0845] via-[#3B185F] to-[#1E3A8A] hover:from-[#200535] hover:via-[#30124f] hover:to-[#172e6e] text-white font-bold text-sm sm:text-base tracking-wide shadow-lg shadow-purple-950/25 hover:shadow-xl hover:shadow-purple-950/30 active:scale-[0.98] transition-all flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed group touch-manipulation"
           >
             {isLoading ? (
               <div className="flex items-center space-x-2">
@@ -363,15 +363,15 @@ export const LoginCard: React.FC<LoginCardProps> = ({
         </form>
 
         {/* Footer Support Links */}
-        <div className="mt-6 pt-5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+        <div className="mt-5 sm:mt-6 pt-4 sm:pt-5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
           <button
             id="help-support-link"
             type="button"
             onClick={onOpenHelpSupport}
-            className="flex items-center space-x-1 hover:text-purple-900 transition-colors cursor-pointer"
+            className="flex items-center space-x-1.5 hover:text-purple-900 transition-colors cursor-pointer min-h-[44px] py-1 touch-manipulation"
           >
-            <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
-            <span>Need Help & Support?</span>
+            <HelpCircle className="w-4 h-4 text-slate-400" />
+            <span className="font-medium text-slate-600 hover:text-purple-900">Need Help & Support?</span>
           </button>
 
           <div className="flex items-center space-x-1 text-[11px] text-slate-400">
