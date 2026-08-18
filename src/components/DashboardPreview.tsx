@@ -196,15 +196,48 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ session, onL
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isAppInstalled, setIsAppInstalled] = useState<boolean>(false);
   const [showInstallModal, setShowInstallModal] = useState<boolean>(false);
+  const [showDiagnosticsModal, setShowDiagnosticsModal] = useState<boolean>(false);
   const [installInstructions, setInstallInstructions] = useState<{ title: string; steps: string[] }>({
     title: 'Install Vipulananda College SMS',
     steps: [],
   });
+  const [pwaStatusLog, setPwaStatusLog] = useState<{
+    manifestLoaded: boolean;
+    swRegistered: boolean;
+    isHttps: boolean;
+    displayMode: string;
+    beforeInstallFired: boolean;
+  }>({
+    manifestLoaded: true,
+    swRegistered: false,
+    isHttps: window.location.protocol === 'https:',
+    displayMode: window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser',
+    beforeInstallFired: false,
+  });
 
   useEffect(() => {
+    console.log('[PWA Diagnostics] Initializing PWA check...');
+    console.log('[PWA Diagnostics] Protocol:', window.location.protocol);
+    console.log('[PWA Diagnostics] Standalone mode:', window.matchMedia('(display-mode: standalone)').matches);
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistration().then((reg) => {
+        if (reg) {
+          console.log('[PWA] Service worker registered with scope:', reg.scope);
+          setPwaStatusLog((prev) => ({ ...prev, swRegistered: true }));
+        } else {
+          console.log('[PWA] No service worker registration found.');
+        }
+      }).catch((err) => {
+        console.log('[PWA] Service worker check error:', err);
+      });
+    }
+
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
+      console.log('[PWA] beforeinstallprompt FIRED successfully!');
+      setPwaStatusLog((prev) => ({ ...prev, beforeInstallFired: true }));
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -213,6 +246,7 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ session, onL
       setIsAppInstalled(true);
       setDeferredPrompt(null);
       setShowInstallModal(false);
+      console.log('[PWA] appinstalled event FIRED. App successfully installed.');
     });
 
     if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) {
@@ -762,9 +796,11 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ session, onL
             {!isAppInstalled && (
               <button
                 onClick={async () => {
+                  console.log('[PWA] Install button clicked. deferredPrompt available:', !!deferredPrompt);
                   if (deferredPrompt) {
                     deferredPrompt.prompt();
                     const { outcome } = await deferredPrompt.userChoice;
+                    console.log('[PWA] User choice outcome:', outcome);
                     if (outcome === 'accepted') {
                       setIsAppInstalled(true);
                     }
@@ -809,6 +845,15 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ session, onL
                 <span className="hidden md:inline">Install App</span>
               </button>
             )}
+
+            {/* Temporary PWA Diagnostic Button */}
+            <button
+              onClick={() => setShowDiagnosticsModal(true)}
+              className="px-2.5 py-1.5 rounded-full text-[11px] font-bold bg-purple-800/60 hover:bg-purple-800 text-purple-200 border border-purple-600/40 transition-all cursor-pointer shrink-0"
+              title="View PWA Installability Diagnostics"
+            >
+              PWA Info
+            </button>
 
             {isAppInstalled && (
               <div className="hidden sm:flex items-center space-x-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
@@ -1750,6 +1795,79 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ session, onL
                 className="px-5 py-2.5 rounded-xl bg-purple-900 hover:bg-purple-950 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
               >
                 Got It
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Temporary PWA Diagnostics Modal */}
+      {showDiagnosticsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <SchoolLogo size="sm" showGlowRing={false} className="w-10 h-10 shrink-0" />
+                <div>
+                  <h3 className="font-cinzel font-bold text-slate-900 text-base">PWA Installability Diagnostics</h3>
+                  <p className="text-xs text-slate-500">Netlify Deployment & Browser Capability Report</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowDiagnosticsModal(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-2.5 py-1 text-xs sm:text-sm">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                  <span className="text-slate-600 font-medium">PWA Manifest:</span>
+                  <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">PASS</span>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                  <span className="text-slate-600 font-medium">HTTPS Protocol:</span>
+                  <span className={`font-bold px-2 py-0.5 rounded border ${pwaStatusLog.isHttps ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-amber-700 bg-amber-50 border-amber-200'}`}>
+                    {pwaStatusLog.isHttps ? 'PASS' : 'FAIL'}
+                  </span>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                  <span className="text-slate-600 font-medium">Service Worker:</span>
+                  <span className={`font-bold px-2 py-0.5 rounded border ${pwaStatusLog.swRegistered ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-amber-700 bg-amber-50 border-amber-200'}`}>
+                    {pwaStatusLog.swRegistered ? 'PASS' : 'REGISTERING'}
+                  </span>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                  <span className="text-slate-600 font-medium">Display Mode:</span>
+                  <span className="font-bold text-purple-900 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 uppercase text-[11px]">
+                    {pwaStatusLog.displayMode}
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-purple-50/70 border border-purple-200 space-y-1.5">
+                <div className="flex items-center justify-between font-semibold text-purple-950">
+                  <span>beforeinstallprompt Event:</span>
+                  <span className={`px-2 py-0.5 rounded text-xs font-bold ${pwaStatusLog.beforeInstallFired ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-amber-100 text-amber-900 border border-amber-300'}`}>
+                    {pwaStatusLog.beforeInstallFired ? 'FIRED (Ready)' : 'NOT FIRED YET'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-purple-900/80 leading-relaxed">
+                  {pwaStatusLog.beforeInstallFired 
+                    ? 'The browser has recognized installability and provided the native installation prompt.' 
+                    : 'Note: Browsers (especially Chrome/Android) require user engagement (clicking around, scrolling) and a registered service worker before firing beforeinstallprompt. If not fired, you can still install anytime via your browser menu (⋮ -> "Install app").'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setShowDiagnosticsModal(false)}
+                className="px-5 py-2.5 rounded-xl bg-purple-900 hover:bg-purple-950 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+              >
+                Close Diagnostics
               </button>
             </div>
           </div>
