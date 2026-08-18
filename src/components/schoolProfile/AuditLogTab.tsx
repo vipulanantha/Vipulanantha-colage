@@ -23,13 +23,15 @@ export const AuditLogTab: React.FC<AuditLogTabProps> = ({ auditLogs }) => {
   const [selectedAction, setSelectedAction] = useState<string>('ALL');
   const [inspectingLog, setInspectingLog] = useState<SchoolProfileAuditLog | null>(null);
 
-  const filteredLogs = auditLogs.filter((log) => {
-    const matchesSearch =
-      log.actorName.toLowerCase().includes(search.toLowerCase()) ||
-      log.module.toLowerCase().includes(search.toLowerCase()) ||
-      log.details.toLowerCase().includes(search.toLowerCase()) ||
-      log.action.toLowerCase().includes(search.toLowerCase());
+  const filteredLogs = (auditLogs || []).filter((log) => {
+    if (!log) return false;
+    const actor = (log.actorName || '').toLowerCase();
+    const mod = (log.module || '').toLowerCase();
+    const det = (log.details || '').toLowerCase();
+    const act = (log.action || '').toLowerCase();
+    const q = (search || '').toLowerCase().trim();
 
+    const matchesSearch = !q || actor.includes(q) || mod.includes(q) || det.includes(q) || act.includes(q);
     const matchesModule = selectedModule === 'ALL' || log.module === selectedModule;
     const matchesAction = selectedAction === 'ALL' || log.action === selectedAction;
 

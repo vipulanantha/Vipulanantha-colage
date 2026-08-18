@@ -131,20 +131,20 @@ export const SchoolProfileDashboard: React.FC<SchoolProfileDashboardProps> = ({
     { id: 'overview', label: 'Overview Dashboard', icon: LayoutDashboard },
     { id: 'basic_info', label: 'Basic Information', icon: Building2 },
     { id: 'branding', label: 'Branding & Theme', icon: Palette },
-    { id: 'leadership', label: 'Leadership Directory', icon: Award, count: profileData.leaders.length },
+    { id: 'leadership', label: 'Leadership Directory', icon: Award, count: (profileData.leaders || []).length },
     {
       id: 'protection',
       label: 'Student Protection & Safety',
       icon: ShieldCheck,
-      count: isCpoOrAdmin ? profileData.confidentialProtectionCases.length : undefined,
+      count: isCpoOrAdmin ? (profileData.confidentialProtectionCases || []).length : undefined,
     },
-    { id: 'emergency', label: 'Emergency Contacts', icon: PhoneCall, count: profileData.emergencyContacts.length },
+    { id: 'emergency', label: 'Emergency Contacts', icon: PhoneCall, count: (profileData.emergencyContacts || []).length },
     { id: 'health_welfare', label: 'Health & Welfare', icon: HeartPulse },
-    { id: 'facilities', label: 'Campus Facilities', icon: Building, count: profileData.campusFacilities.length },
-    { id: 'policies', label: 'Policies & Charters', icon: FileText, count: profileData.policies.length },
+    { id: 'facilities', label: 'Campus Facilities', icon: Building, count: (profileData.campusFacilities || []).length },
+    { id: 'policies', label: 'Policies & Charters', icon: FileText, count: (profileData.policies || []).length },
     { id: 'configuration', label: 'School Configuration', icon: Settings },
     { id: 'permissions', label: 'Permissions & RBAC', icon: Lock },
-    { id: 'audit_log', label: 'Audit Trail', icon: History, count: profileData.auditLogs.length },
+    { id: 'audit_log', label: 'Audit Trail', icon: History, count: (profileData.auditLogs || []).length },
   ];
 
   return (

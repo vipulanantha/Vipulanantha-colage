@@ -17,7 +17,7 @@ import {
   SchoolProfileData,
   UserRole,
 } from '../types/schoolProfile';
-import { BUNDLED_OFFICIAL_LOGO } from './schoolSettings';
+import { BUNDLED_OFFICIAL_LOGO, fetchSchoolSettings, applySchoolLogoUrl } from './schoolSettings';
 import { resilientUpsert } from './supabaseDb';
 
 // Storage cache keys
@@ -544,6 +544,18 @@ export const fetchFullSchoolProfile = async (): Promise<SchoolProfileData> => {
   const systemConfig = getLocal<SchoolSystemConfig>('config', DEFAULT_SYSTEM_CONFIG);
   const auditLogs = getLocal<SchoolProfileAuditLog[]>('audit_logs', DEFAULT_PROFILE_AUDIT_LOGS);
 
+  // Sync cloud settings & logo from Supabase across all devices
+  try {
+    const cloudSettings = await fetchSchoolSettings();
+    if (cloudSettings && cloudSettings.logo_url && cloudSettings.logo_url.trim().length > 0) {
+      branding.logoUrl = cloudSettings.logo_url;
+      branding.loginPageLogoUrl = cloudSettings.logo_url;
+      setLocal('branding', branding);
+    }
+  } catch (e) {
+    // Continue
+  }
+
   if (isSupabaseConfigured && supabase) {
     try {
       const { data: schoolDb } = await supabase.from('schools').select('*').limit(1).maybeSingle();
@@ -556,6 +568,26 @@ export const fetchFullSchoolProfile = async (): Promise<SchoolProfileData> => {
         basicInfo.officialEmail = schoolDb.email || basicInfo.officialEmail;
         basicInfo.website = schoolDb.website || basicInfo.website;
         basicInfo.schoolMotto = schoolDb.motto || basicInfo.schoolMotto;
+        if (schoolDb.logo_url && schoolDb.logo_url.trim().length > 0) {
+          branding.logoUrl = schoolDb.logo_url;
+          branding.loginPageLogoUrl = schoolDb.logo_url;
+        }
+      }
+    } catch (e) {
+      // Continue gracefully
+    }
+
+    try {
+      const { data: brandingDb } = await supabase.from('school_branding').select('*').limit(1).maybeSingle();
+      if (brandingDb) {
+        if (brandingDb.logo_url && brandingDb.logo_url.trim().length > 0) {
+          branding.logoUrl = brandingDb.logo_url;
+          branding.loginPageLogoUrl = brandingDb.logo_url;
+        }
+        if (brandingDb.primary_color) branding.primaryThemeColor = brandingDb.primary_color;
+        if (brandingDb.secondary_color) branding.secondaryThemeColor = brandingDb.secondary_color;
+        if (brandingDb.header_title) branding.schoolHeaderTitle = brandingDb.header_title;
+        if (brandingDb.footer_text) branding.schoolFooterText = brandingDb.footer_text;
       }
     } catch (e) {
       // Continue gracefully
@@ -670,6 +702,15 @@ export const updateSchoolBranding = async (
 ) => {
   const prev = getLocal<SchoolBranding>('branding', DEFAULT_BRANDING);
   setLocal('branding', branding);
+
+  // Synchronize logo across school settings so all components & devices reflect it
+  if (branding.logoUrl) {
+    try {
+      await applySchoolLogoUrl(branding.logoUrl);
+    } catch (e) {
+      // Continue
+    }
+  }
 
   await recordProfileAuditLog({
     actorName,

@@ -45,31 +45,46 @@ export const CampusFacilitiesTab: React.FC<CampusFacilitiesTabProps> = ({
     managedBy: '',
   });
 
-  const filteredFacilities = facilities.filter(
-    (f) =>
-      f.facilityName.toLowerCase().includes(search.toLowerCase()) ||
-      f.category.toLowerCase().includes(search.toLowerCase()) ||
-      f.managedBy?.toLowerCase().includes(search.toLowerCase())
-  );
+  const getFacilityName = (f?: Partial<CampusFacility> | null) => f?.facilityName || f?.name || 'Campus Facility';
+  const getFacilityManager = (f?: Partial<CampusFacility> | null) => f?.managedBy || f?.responsibleStaff || '';
+
+  const filteredFacilities = (facilities || []).filter((f) => {
+    if (!f) return false;
+    const name = (f.facilityName || f.name || '').toLowerCase();
+    const cat = (f.category || '').toLowerCase();
+    const mgr = (f.managedBy || f.responsibleStaff || '').toLowerCase();
+    const desc = (f.description || f.equipmentDetails || '').toLowerCase();
+    const q = (search || '').toLowerCase().trim();
+    if (!q) return true;
+    return name.includes(q) || cat.includes(q) || mgr.includes(q) || desc.includes(q);
+  });
 
   const handleOpenAddModal = () => {
     setSelectedFacility(null);
     setFormState({
       id: `fac-${Date.now()}`,
+      name: '',
       facilityName: '',
-      category: 'Science Laboratory',
+      category: 'Science & Computer Labs',
       unitCount: 1,
       capacity: 45,
       status: 'Operational',
       equipmentDetails: '',
       managedBy: 'Head of Science',
+      responsibleStaff: 'Head of Science',
     });
     setIsModalOpen(true);
   };
 
   const handleOpenEditModal = (facility: CampusFacility) => {
     setSelectedFacility(facility);
-    setFormState({ ...facility });
+    setFormState({
+      ...facility,
+      facilityName: facility.facilityName || facility.name || '',
+      name: facility.name || facility.facilityName || '',
+      managedBy: facility.managedBy || facility.responsibleStaff || '',
+      responsibleStaff: facility.responsibleStaff || facility.managedBy || '',
+    });
     setIsModalOpen(true);
   };
 
@@ -77,7 +92,8 @@ export const CampusFacilitiesTab: React.FC<CampusFacilitiesTabProps> = ({
     e.preventDefault();
     if (!canEdit) return;
 
-    if (!formState.facilityName?.trim()) {
+    const chosenName = formState.facilityName?.trim() || formState.name?.trim();
+    if (!chosenName) {
       setNotification({ type: 'error', message: 'Facility name is required.' });
       return;
     }
@@ -86,11 +102,25 @@ export const CampusFacilitiesTab: React.FC<CampusFacilitiesTabProps> = ({
     setNotification(null);
 
     try {
-      await onSaveFacility(formState as CampusFacility);
+      const payload: CampusFacility = {
+        ...formState,
+        id: formState.id || `fac-${Date.now()}`,
+        name: chosenName,
+        facilityName: chosenName,
+        category: formState.category || 'Classroom Block',
+        managedBy: formState.managedBy || formState.responsibleStaff || '',
+        responsibleStaff: formState.responsibleStaff || formState.managedBy || '',
+        status: formState.status || 'Operational',
+        unitCount: formState.unitCount ?? 1,
+        capacity: formState.capacity ?? 40,
+        features: formState.features || [],
+      } as CampusFacility;
+
+      await onSaveFacility(payload);
       setIsModalOpen(false);
       setNotification({
         type: 'success',
-        message: `${formState.facilityName} saved to campus inventory!`,
+        message: `${chosenName} saved to campus inventory!`,
       });
       setTimeout(() => setNotification(null), 5000);
     } catch (err: any) {
@@ -103,11 +133,12 @@ export const CampusFacilitiesTab: React.FC<CampusFacilitiesTabProps> = ({
   const handleConfirmDelete = async () => {
     if (!facilityToDelete || !canEdit) return;
 
+    const delName = getFacilityName(facilityToDelete);
     try {
       await onDeleteFacility(facilityToDelete.id);
       setNotification({
         type: 'success',
-        message: `Removed ${facilityToDelete.facilityName} from campus inventory.`,
+        message: `Removed ${delName} from campus inventory.`,
       });
       setTimeout(() => setNotification(null), 5000);
     } catch (err: any) {
@@ -197,20 +228,20 @@ export const CampusFacilitiesTab: React.FC<CampusFacilitiesTabProps> = ({
                     {facility.category}
                   </span>
                   <h3 className="font-bold text-slate-900 text-sm sm:text-base mt-1.5">
-                    {facility.facilityName}
+                    {getFacilityName(facility)}
                   </h3>
                 </div>
 
                 <span
                   className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
-                    facility.status === 'Operational'
+                    (facility.status || 'Operational') === 'Operational'
                       ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                       : facility.status === 'Under Maintenance'
                       ? 'bg-amber-50 text-amber-700 border border-amber-200'
                       : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                   }`}
                 >
-                  {facility.status}
+                  {facility.status || 'Operational'}
                 </span>
               </div>
 
@@ -218,23 +249,23 @@ export const CampusFacilitiesTab: React.FC<CampusFacilitiesTabProps> = ({
               <div className="grid grid-cols-2 gap-2 my-3 p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs">
                 <div>
                   <div className="text-[10px] font-bold text-slate-400 uppercase">Units / Rooms</div>
-                  <div className="font-extrabold text-slate-800 text-sm">{facility.unitCount}</div>
+                  <div className="font-extrabold text-slate-800 text-sm">{facility.unitCount ?? 1}</div>
                 </div>
                 <div>
                   <div className="text-[10px] font-bold text-slate-400 uppercase">Capacity</div>
-                  <div className="font-extrabold text-slate-800 text-sm">{facility.capacity} Persons</div>
+                  <div className="font-extrabold text-slate-800 text-sm">{facility.capacity ?? 50} Persons</div>
                 </div>
               </div>
 
-              {facility.equipmentDetails && (
+              {(facility.equipmentDetails || facility.description) && (
                 <div className="text-xs text-slate-600 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
-                  <strong className="text-slate-800">Assets:</strong> {facility.equipmentDetails}
+                  <strong className="text-slate-800">Details:</strong> {facility.equipmentDetails || facility.description}
                 </div>
               )}
 
-              {facility.managedBy && (
+              {getFacilityManager(facility) && (
                 <div className="text-[11px] text-slate-500 mt-2">
-                  Officer in-charge: <strong className="text-slate-700">{facility.managedBy}</strong>
+                  Officer in-charge: <strong className="text-slate-700">{getFacilityManager(facility)}</strong>
                 </div>
               )}
             </div>

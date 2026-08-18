@@ -48,24 +48,36 @@ export const EmergencyContactsTab: React.FC<EmergencyContactsTabProps> = ({
     notes: '',
   });
 
-  const filteredContacts = contacts.filter(
-    (c) =>
-      c.serviceName.toLowerCase().includes(search.toLowerCase()) ||
-      c.category.toLowerCase().includes(search.toLowerCase()) ||
-      c.telephone.toLowerCase().includes(search.toLowerCase()) ||
-      c.contactPerson?.toLowerCase().includes(search.toLowerCase())
-  );
+  const getContactName = (c?: Partial<EmergencyContact> | null) => c?.serviceName || c?.name || c?.designation || 'Emergency Contact';
+  const getContactPhone = (c?: Partial<EmergencyContact> | null) => c?.telephone || c?.phone || '';
+  const getContactCategory = (c?: Partial<EmergencyContact> | null) => c?.category || c?.designation || 'Emergency Desk';
+  const getContactHours = (c?: Partial<EmergencyContact> | null) => c?.availableHours || c?.availability || '24/7 Service';
+
+  const filteredContacts = (contacts || []).filter((c) => {
+    if (!c) return false;
+    const name = (c.serviceName || c.name || c.designation || '').toLowerCase();
+    const cat = (c.category || c.designation || '').toLowerCase();
+    const tel = (c.telephone || c.phone || '').toLowerCase();
+    const person = (c.contactPerson || '').toLowerCase();
+    const q = (search || '').toLowerCase().trim();
+    if (!q) return true;
+    return name.includes(q) || cat.includes(q) || tel.includes(q) || person.includes(q);
+  });
 
   const handleOpenAddModal = () => {
     setSelectedContact(null);
     setFormState({
       id: `emg-${Date.now()}`,
+      name: '',
       serviceName: '',
       category: 'Police',
+      designation: 'Local Police Post (Bambalapitiya/Wellawatte)',
       contactPerson: '',
       telephone: '119',
+      phone: '119',
       alternativePhone: '',
       availableHours: '24/7 Emergency Service',
+      availability: '24/7 Hotline',
       isPrimary: false,
       address: '',
       notes: '',
@@ -75,7 +87,15 @@ export const EmergencyContactsTab: React.FC<EmergencyContactsTabProps> = ({
 
   const handleOpenEditModal = (contact: EmergencyContact) => {
     setSelectedContact(contact);
-    setFormState({ ...contact });
+    setFormState({
+      ...contact,
+      serviceName: contact.serviceName || contact.name || contact.designation || '',
+      name: contact.name || contact.serviceName || contact.designation || '',
+      telephone: contact.telephone || contact.phone || '',
+      phone: contact.phone || contact.telephone || '',
+      category: contact.category || contact.designation || 'Emergency Service',
+      availableHours: contact.availableHours || contact.availability || '24/7 Service',
+    });
     setIsModalOpen(true);
   };
 
@@ -83,7 +103,10 @@ export const EmergencyContactsTab: React.FC<EmergencyContactsTabProps> = ({
     e.preventDefault();
     if (!canEdit) return;
 
-    if (!formState.serviceName?.trim() || !formState.telephone?.trim()) {
+    const chosenName = formState.serviceName?.trim() || formState.name?.trim() || formState.designation?.trim();
+    const chosenPhone = formState.telephone?.trim() || formState.phone?.trim();
+
+    if (!chosenName || !chosenPhone) {
       setNotification({ type: 'error', message: 'Service name and telephone are required.' });
       return;
     }
@@ -92,11 +115,28 @@ export const EmergencyContactsTab: React.FC<EmergencyContactsTabProps> = ({
     setNotification(null);
 
     try {
-      await onSaveContact(formState as EmergencyContact);
+      const payload: EmergencyContact = {
+        ...formState,
+        id: formState.id || `emg-${Date.now()}`,
+        name: chosenName,
+        serviceName: chosenName,
+        phone: chosenPhone,
+        telephone: chosenPhone,
+        category: formState.category || 'Emergency Service',
+        designation: (formState.designation || chosenName) as any,
+        email: formState.email || '',
+        availableHours: formState.availableHours || '24/7 Service',
+        availability: (formState.availability || '24/7 Hotline') as any,
+        priority: (formState.priority || 'Critical') as any,
+        isPrimary: Boolean(formState.isPrimary),
+        isRestricted: Boolean(formState.isRestricted),
+      } as EmergencyContact;
+
+      await onSaveContact(payload);
       setIsModalOpen(false);
       setNotification({
         type: 'success',
-        message: `Emergency contact ${formState.serviceName} saved successfully!`,
+        message: `Emergency contact ${chosenName} saved successfully!`,
       });
       setTimeout(() => setNotification(null), 5000);
     } catch (err: any) {
@@ -109,11 +149,12 @@ export const EmergencyContactsTab: React.FC<EmergencyContactsTabProps> = ({
   const handleConfirmDelete = async () => {
     if (!contactToDelete || !canEdit) return;
 
+    const delName = getContactName(contactToDelete);
     try {
       await onDeleteContact(contactToDelete.id);
       setNotification({
         type: 'success',
-        message: `Removed ${contactToDelete.serviceName} from emergency directory.`,
+        message: `Removed ${delName} from emergency directory.`,
       });
       setTimeout(() => setNotification(null), 5000);
     } catch (err: any) {
@@ -212,10 +253,10 @@ export const EmergencyContactsTab: React.FC<EmergencyContactsTabProps> = ({
                   </div>
                   <div>
                     <span className="inline-block px-2 py-0.5 bg-slate-100 text-slate-700 font-bold text-[10px] uppercase tracking-wider rounded-md">
-                      {contact.category}
+                      {getContactCategory(contact)}
                     </span>
                     <h3 className="font-bold text-slate-900 text-sm sm:text-base mt-1">
-                      {contact.serviceName}
+                      {getContactName(contact)}
                     </h3>
                   </div>
                 </div>
@@ -230,10 +271,10 @@ export const EmergencyContactsTab: React.FC<EmergencyContactsTabProps> = ({
               {/* Number and Hours */}
               <div className="mt-4 space-y-2">
                 <a
-                  href={`tel:${contact.telephone}`}
+                  href={`tel:${getContactPhone(contact)}`}
                   className="flex items-center justify-between p-3 bg-slate-50 hover:bg-rose-50 rounded-xl border border-slate-200 hover:border-rose-300 text-rose-700 transition-all font-mono font-bold text-base sm:text-lg"
                 >
-                  <span>{contact.telephone}</span>
+                  <span>{getContactPhone(contact)}</span>
                   <PhoneCall className="w-4 h-4" />
                 </a>
 
@@ -246,7 +287,7 @@ export const EmergencyContactsTab: React.FC<EmergencyContactsTabProps> = ({
 
                 <div className="flex items-center space-x-1.5 text-xs text-slate-600 pt-1">
                   <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>{contact.availableHours}</span>
+                  <span>{getContactHours(contact)}</span>
                 </div>
 
                 {contact.address && (

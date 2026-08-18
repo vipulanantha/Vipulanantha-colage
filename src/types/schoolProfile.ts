@@ -53,7 +53,8 @@ export interface SchoolBranding {
 export interface SchoolLeader {
   id: string;
   fullName: string;
-  photoUrl: string;
+  name?: string;
+  photoUrl?: string;
   designation:
     | 'Principal'
     | 'Deputy Principal'
@@ -65,15 +66,18 @@ export interface SchoolLeader {
     | 'Section Head (Primary)'
     | 'Academic Coordinator'
     | 'Discipline Coordinator'
-    | 'Senior Student Welfare Officer';
-  employeeId: string;
-  department: string;
+    | 'Senior Student Welfare Officer'
+    | string;
+  employeeId?: string;
+  department?: string;
   officialEmail: string;
+  email?: string;
   officialPhone: string;
-  status: 'Active' | 'On Sabbatical' | 'Acting Duty';
-  qualifications: string;
-  appointmentDate: string;
-  orderIndex: number;
+  phone?: string;
+  status: 'Active' | 'On Sabbatical' | 'Acting Duty' | string;
+  qualifications?: string;
+  appointmentDate?: string;
+  orderIndex?: number;
 }
 
 export interface ProtectionSafetySettings {
@@ -119,8 +123,9 @@ export interface ConfidentialProtectionCase {
 
 export interface SchoolEmergencyContact {
   id: string;
-  name: string;
-  designation:
+  name?: string;
+  serviceName?: string;
+  designation?:
     | 'School Emergency Hotline'
     | 'Principal Office Direct'
     | 'Child Protection Officer'
@@ -130,19 +135,29 @@ export interface SchoolEmergencyContact {
     | 'Main Gate Security Office'
     | 'School Transport Coordinator'
     | 'Colombo Fire & Rescue'
-    | 'Local Police Post (Bambalapitiya/Wellawatte)';
-  phone: string;
-  email: string;
-  availability: '24/7 Hotline' | 'School Hours (07:00 - 16:00)' | 'On-Call Emergency' | 'All Working Days';
-  priority: 'Critical' | 'High' | 'Normal';
-  isRestricted: boolean;
+    | 'Local Police Post (Bambalapitiya/Wellawatte)'
+    | string;
+  category?: string;
+  contactPerson?: string;
+  phone?: string;
+  telephone?: string;
+  alternativePhone?: string;
+  email?: string;
+  availability?: '24/7 Hotline' | 'School Hours (07:00 - 16:00)' | 'On-Call Emergency' | 'All Working Days' | string;
+  availableHours?: string;
+  priority?: 'Critical' | 'High' | 'Normal' | string;
+  isPrimary?: boolean;
+  isRestricted?: boolean;
+  address?: string;
+  notes?: string;
 }
 
 export type EmergencyContact = SchoolEmergencyContact;
 
 export interface CampusFacility {
   id: string;
-  name: string;
+  name?: string;
+  facilityName?: string;
   category:
     | 'Administration'
     | 'Classroom Block'
@@ -154,23 +169,30 @@ export interface CampusFacility {
     | 'Transport & Gates'
     | 'Security & Safety'
     | 'Boys Facilities'
-    | 'Girls Facilities';
-  building: string;
-  floor: string;
+    | 'Girls Facilities'
+    | string;
+  building?: string;
+  floor?: string;
   roomNumber?: string;
-  description: string;
-  safetyLevel: 'GREEN' | 'YELLOW' | 'RED';
-  responsibleStaff: string;
+  description?: string;
+  equipmentDetails?: string;
+  safetyLevel?: 'GREEN' | 'YELLOW' | 'RED';
+  responsibleStaff?: string;
+  managedBy?: string;
+  unitCount?: number;
   capacity?: number;
-  features: string[];
+  status?: 'Operational' | 'Under Maintenance' | 'Scheduled Upgrade' | string;
+  features?: string[];
 }
 
 export interface SchoolPolicy {
   id: string;
-  name: string;
+  name?: string;
+  policyTitle?: string;
   category:
     | 'Student Code of Conduct'
     | 'Child Protection Policy'
+    | 'Child Protection & Safeguarding'
     | 'Anti-Bullying Policy'
     | 'Anti-Harassment Policy'
     | 'Attendance Policy'
@@ -180,15 +202,20 @@ export interface SchoolPolicy {
     | 'Social Media Policy'
     | 'School Transport Policy'
     | 'Emergency Safety Policy'
-    | 'Privacy & Data Protection Policy';
-  description: string;
+    | 'Privacy & Data Protection Policy'
+    | string;
+  description?: string;
+  summary?: string;
+  fullContent?: string;
   version: string;
-  publishedDate: string;
+  publishedDate?: string;
+  effectiveDate?: string;
   lastUpdated: string;
-  status: 'Active • Enforced' | 'Under Periodic Review' | 'Archived';
-  updatedBy: string;
+  status: 'Active • Enforced' | 'Active' | 'Under Periodic Review' | 'Archived' | string;
+  updatedBy?: string;
+  approvedBy?: string;
   fileUrl?: string;
-  keyPoints: string[];
+  keyPoints?: string[];
   versionHistory?: {
     version: string;
     date: string;

@@ -51,13 +51,21 @@ export const LeadershipTab: React.FC<LeadershipTabProps> = ({
     orderIndex: leaders.length + 1,
   });
 
-  const filteredLeaders = leaders.filter(
-    (l) =>
-      l.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      l.designation.toLowerCase().includes(search.toLowerCase()) ||
-      l.department.toLowerCase().includes(search.toLowerCase()) ||
-      l.employeeId.toLowerCase().includes(search.toLowerCase())
-  );
+  const getLeaderName = (l?: Partial<SchoolLeader> | null) => l?.fullName || l?.name || 'School Official';
+  const getLeaderEmail = (l?: Partial<SchoolLeader> | null) => l?.officialEmail || l?.email || '';
+  const getLeaderPhone = (l?: Partial<SchoolLeader> | null) => l?.officialPhone || l?.phone || '';
+
+  const filteredLeaders = (leaders || []).filter((l) => {
+    if (!l) return false;
+    const name = (l.fullName || l.name || '').toLowerCase();
+    const des = (l.designation || '').toLowerCase();
+    const dept = (l.department || '').toLowerCase();
+    const empId = (l.employeeId || '').toLowerCase();
+    const email = (l.officialEmail || l.email || '').toLowerCase();
+    const q = (search || '').toLowerCase().trim();
+    if (!q) return true;
+    return name.includes(q) || des.includes(q) || dept.includes(q) || empId.includes(q) || email.includes(q);
+  });
 
   const handleOpenAddModal = () => {
     setSelectedLeader(null);

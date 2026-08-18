@@ -53,8 +53,9 @@ export const ProfileOverviewTab: React.FC<ProfileOverviewTabProps> = ({
   canEdit = true,
   onNavigateTab,
 }) => {
-  const principal = leaders.find((l) => l.designation === 'Principal') || leaders[0];
-  const academicVP = leaders.find((l) => l.designation.includes('Academic')) || leaders[1];
+  const safeLeaders = leaders || [];
+  const principal = safeLeaders.find((l) => (l?.designation || '').toLowerCase().includes('principal')) || safeLeaders[0];
+  const academicVP = safeLeaders.find((l) => (l?.designation || '').toLowerCase().includes('academic') || (l?.designation || '').toLowerCase().includes('vice')) || safeLeaders[1];
 
   return (
     <div className="space-y-6 animate-fade-in">

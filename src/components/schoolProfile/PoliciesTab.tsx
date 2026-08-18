@@ -48,32 +48,52 @@ export const PoliciesTab: React.FC<PoliciesTabProps> = ({
     approvedBy: 'Principal & College Board of Governance',
   });
 
-  const filteredPolicies = policies.filter(
-    (p) =>
-      p.policyTitle.toLowerCase().includes(search.toLowerCase()) ||
-      p.category.toLowerCase().includes(search.toLowerCase()) ||
-      p.summary.toLowerCase().includes(search.toLowerCase())
-  );
+  const getPolicyTitle = (p?: Partial<SchoolPolicy> | null) => p?.policyTitle || p?.name || 'School Policy Document';
+  const getPolicySummary = (p?: Partial<SchoolPolicy> | null) => p?.summary || p?.description || '';
+  const getPolicyEffectiveDate = (p?: Partial<SchoolPolicy> | null) => p?.effectiveDate || p?.publishedDate || p?.lastUpdated || '2026-01-01';
+  const getPolicyApprovedBy = (p?: Partial<SchoolPolicy> | null) => p?.approvedBy || p?.updatedBy || 'College Governance';
+
+  const filteredPolicies = (policies || []).filter((p) => {
+    if (!p) return false;
+    const title = (p.policyTitle || p.name || '').toLowerCase();
+    const cat = (p.category || '').toLowerCase();
+    const sum = (p.summary || p.description || '').toLowerCase();
+    const q = (search || '').toLowerCase().trim();
+    if (!q) return true;
+    return title.includes(q) || cat.includes(q) || sum.includes(q);
+  });
 
   const handleOpenAddModal = () => {
     setSelectedPolicy(null);
     setFormState({
       id: `pol-${Date.now()}`,
+      name: '',
       policyTitle: '',
       category: 'Child Protection & Safeguarding',
       version: '1.0',
       status: 'Active',
       effectiveDate: new Date().toISOString().split('T')[0],
+      publishedDate: new Date().toISOString().split('T')[0],
       summary: '',
+      description: '',
       fullContent: '',
       approvedBy: 'Principal & Board of Governance',
+      updatedBy: 'Principal & Board of Governance',
     });
     setIsModalOpen(true);
   };
 
   const handleOpenEditModal = (policy: SchoolPolicy) => {
     setSelectedPolicy(policy);
-    setFormState({ ...policy });
+    setFormState({
+      ...policy,
+      policyTitle: policy.policyTitle || policy.name || '',
+      name: policy.name || policy.policyTitle || '',
+      summary: policy.summary || policy.description || '',
+      description: policy.description || policy.summary || '',
+      effectiveDate: policy.effectiveDate || policy.publishedDate || policy.lastUpdated || '',
+      approvedBy: policy.approvedBy || policy.updatedBy || '',
+    });
     setIsModalOpen(true);
   };
 
@@ -81,7 +101,10 @@ export const PoliciesTab: React.FC<PoliciesTabProps> = ({
     e.preventDefault();
     if (!canEdit) return;
 
-    if (!formState.policyTitle?.trim() || !formState.summary?.trim()) {
+    const chosenTitle = formState.policyTitle?.trim() || formState.name?.trim();
+    const chosenSummary = formState.summary?.trim() || formState.description?.trim();
+
+    if (!chosenTitle || !chosenSummary) {
       setNotification({ type: 'error', message: 'Policy title and summary are required.' });
       return;
     }
@@ -90,11 +113,29 @@ export const PoliciesTab: React.FC<PoliciesTabProps> = ({
     setNotification(null);
 
     try {
-      await onSavePolicy(formState as SchoolPolicy);
+      const payload: SchoolPolicy = {
+        ...formState,
+        id: formState.id || `pol-${Date.now()}`,
+        name: chosenTitle,
+        policyTitle: chosenTitle,
+        category: formState.category || 'Child Protection & Safeguarding',
+        version: formState.version || '1.0',
+        status: formState.status || 'Active • Enforced',
+        summary: chosenSummary,
+        description: chosenSummary,
+        effectiveDate: formState.effectiveDate || new Date().toISOString().split('T')[0],
+        publishedDate: formState.publishedDate || formState.effectiveDate || new Date().toISOString().split('T')[0],
+        lastUpdated: new Date().toISOString().split('T')[0],
+        approvedBy: formState.approvedBy || 'Principal & College Board of Governance',
+        updatedBy: formState.updatedBy || formState.approvedBy || 'Principal',
+        fullContent: formState.fullContent || chosenSummary,
+      } as SchoolPolicy;
+
+      await onSavePolicy(payload);
       setIsModalOpen(false);
       setNotification({
         type: 'success',
-        message: `${formState.policyTitle} saved to official policies registry!`,
+        message: `${chosenTitle} saved to official policies registry!`,
       });
       setTimeout(() => setNotification(null), 5000);
     } catch (err: any) {
@@ -107,11 +148,12 @@ export const PoliciesTab: React.FC<PoliciesTabProps> = ({
   const handleConfirmDelete = async () => {
     if (!policyToDelete || !canEdit) return;
 
+    const delTitle = getPolicyTitle(policyToDelete);
     try {
       await onDeletePolicy(policyToDelete.id);
       setNotification({
         type: 'success',
-        message: `Removed ${policyToDelete.policyTitle} from policies registry.`,
+        message: `Removed ${delTitle} from policies registry.`,
       });
       setTimeout(() => setNotification(null), 5000);
     } catch (err: any) {
@@ -205,7 +247,7 @@ export const PoliciesTab: React.FC<PoliciesTabProps> = ({
                       {policy.category} • v{policy.version}
                     </span>
                     <h3 className="font-bold text-slate-900 text-sm sm:text-base mt-1">
-                      {policy.policyTitle}
+                      {getPolicyTitle(policy)}
                     </h3>
                   </div>
                 </div>
@@ -222,12 +264,12 @@ export const PoliciesTab: React.FC<PoliciesTabProps> = ({
               </div>
 
               <p className="text-xs text-slate-600 leading-relaxed mt-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                {policy.summary}
+                {getPolicySummary(policy)}
               </p>
 
               <div className="flex items-center justify-between text-[11px] text-slate-400 mt-3 pt-2 border-t border-slate-100">
-                <span>Effective: {policy.effectiveDate}</span>
-                <span>Approved: {policy.approvedBy}</span>
+                <span>Effective: {getPolicyEffectiveDate(policy)}</span>
+                <span>Approved: {getPolicyApprovedBy(policy)}</span>
               </div>
             </div>
 
@@ -274,7 +316,7 @@ export const PoliciesTab: React.FC<PoliciesTabProps> = ({
                   {viewingPolicy.category} • Version {viewingPolicy.version}
                 </span>
                 <h3 className="font-cinzel font-bold text-xl text-slate-900 mt-0.5">
-                  {viewingPolicy.policyTitle}
+                  {getPolicyTitle(viewingPolicy)}
                 </h3>
               </div>
               <button
@@ -288,16 +330,16 @@ export const PoliciesTab: React.FC<PoliciesTabProps> = ({
             <div className="space-y-4 text-xs sm:text-sm text-slate-700 leading-relaxed font-sans">
               <div className="p-3 bg-purple-50/50 rounded-xl border border-purple-100 text-purple-950 font-medium">
                 <strong className="block text-xs uppercase font-bold text-purple-900 mb-1">Executive Summary:</strong>
-                {viewingPolicy.summary}
+                {getPolicySummary(viewingPolicy)}
               </div>
 
               <div className="space-y-2 whitespace-pre-line bg-slate-50 p-4 rounded-xl border border-slate-200">
-                {viewingPolicy.fullContent || 'Full policy charter text is maintained in the institutional archive.'}
+                {viewingPolicy.fullContent || viewingPolicy.description || 'Full policy charter text is maintained in the institutional archive.'}
               </div>
 
               <div className="flex items-center justify-between text-xs text-slate-500 pt-3 border-t border-slate-100">
-                <span>Effective Since: {viewingPolicy.effectiveDate}</span>
-                <span>Ratified by: {viewingPolicy.approvedBy}</span>
+                <span>Effective Since: {getPolicyEffectiveDate(viewingPolicy)}</span>
+                <span>Ratified by: {getPolicyApprovedBy(viewingPolicy)}</span>
               </div>
             </div>
 
