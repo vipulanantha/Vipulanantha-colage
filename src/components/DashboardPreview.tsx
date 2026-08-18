@@ -710,13 +710,13 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ session, onL
       {/* Top Navigation Bar */}
       <header className="bg-gradient-to-r from-[#2A0845] via-[#3B185F] to-[#1E3A8A] text-white shadow-lg sticky top-0 z-30 border-b border-amber-500/30">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-2.5 sm:space-x-3">
-            <SchoolLogo size="sm" showGlowRing={false} className="w-9 h-9 sm:w-10 sm:h-10 shrink-0" />
-            <div>
-              <div className="font-cinzel font-bold text-xs sm:text-base tracking-wide flex items-center space-x-1.5 sm:space-x-2">
+          <div className="flex items-center space-x-1.5 sm:space-x-3">
+            <SchoolLogo size="sm" showGlowRing={false} className="w-8 h-8 sm:w-10 sm:h-10 shrink-0" />
+            <div className="max-w-[140px] sm:max-w-none">
+              <div className="font-cinzel font-bold text-[11px] sm:text-base tracking-wide flex items-center space-x-1 sm:space-x-2">
                 <span className="truncate">VIPULANANTHA</span>
-                <span className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300 font-sans border border-amber-400/30 shrink-0">
-                  16-Module SMS
+                <span className="hidden xs:inline-block text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300 font-sans border border-amber-400/30 shrink-0">
+                  SMS
                 </span>
               </div>
               <div className="text-[9px] sm:text-[10px] text-purple-200 font-tamil truncate">
@@ -725,7 +725,7 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ session, onL
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 sm:space-x-4">
+          <div className="flex items-center space-x-1.5 sm:space-x-3">
             {/* Download / Install App for Any Device Button */}
             <button
               onClick={() => {
