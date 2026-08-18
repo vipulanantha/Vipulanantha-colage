@@ -1,0 +1,20 @@
+{
+  "name": "Vipulanantha College SMS",
+  "short_name": "Vipulanantha SMS",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#2A0845",
+  "theme_color": "#2A0845",
+  "icons": [
+    {
+      "src": "/assets/vipulanantha-college-logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/vipulanantha-college-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
