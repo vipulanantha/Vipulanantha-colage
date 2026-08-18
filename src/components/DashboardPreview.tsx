@@ -195,6 +195,11 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ session, onL
   // PWA Install Prompt State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isAppInstalled, setIsAppInstalled] = useState<boolean>(false);
+  const [showInstallModal, setShowInstallModal] = useState<boolean>(false);
+  const [installInstructions, setInstallInstructions] = useState<{ title: string; steps: string[] }>({
+    title: 'Install Vipulananda College SMS',
+    steps: [],
+  });
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -207,6 +212,7 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ session, onL
     window.addEventListener('appinstalled', () => {
       setIsAppInstalled(true);
       setDeferredPrompt(null);
+      setShowInstallModal(false);
     });
 
     if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) {
@@ -766,12 +772,34 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ session, onL
                   } else {
                     const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
                     if (/android/i.test(userAgent)) {
-                      alert('📱 Android PWA Installation:\n\n1. Tap the browser menu (3 dots at top right).\n2. Select "Install app" or "Add to Home screen".');
+                      setInstallInstructions({
+                        title: 'Android PWA Installation',
+                        steps: [
+                          '1. Tap the browser menu (⋮ 3 dots at top right).',
+                          '2. Select "Install app" or "Add to Home screen".',
+                          '3. Confirm to add Vipulananda College SMS to your home screen.',
+                        ],
+                      });
                     } else if (/iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream) {
-                      alert('🍎 iOS / iPadOS Installation:\n\n1. Tap the Share button at the bottom of Safari.\n2. Scroll down and select "Add to Home Screen".');
+                      setInstallInstructions({
+                        title: 'iOS / iPhone Installation',
+                        steps: [
+                          '1. Tap the Share button at the bottom of Safari.',
+                          '2. Scroll down and select "Add to Home Screen".',
+                          '3. Tap Add to install Vipulananda College SMS.',
+                        ],
+                      });
                     } else {
-                      alert('💻 Desktop Web App Installation:\n\n1. Click the install icon (🖥️ / ➕) in your browser address bar (Chrome, Edge, or Safari).\n2. Or bookmark this app for instant access on any device.');
+                      setInstallInstructions({
+                        title: 'Desktop App Installation',
+                        steps: [
+                          '1. Click the install icon (🖥️ / ➕) in your browser address bar (Chrome or Edge).',
+                          '2. Or open your browser menu and select "Install Vipulananda College...".',
+                          '3. The app will launch in its own dedicated window.',
+                        ],
+                      });
                     }
+                    setShowInstallModal(true);
                   }
                 }}
                 className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-400 hover:bg-amber-300 text-purple-950 shadow-md transition-all cursor-pointer shrink-0"
@@ -1679,6 +1707,51 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ session, onL
                 className="px-5 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800"
               >
                 Close Inspector
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Professional Install Instructions Modal (Replaces JS alert) */}
+      {showInstallModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-900 text-amber-300 font-bold flex items-center justify-center text-lg shadow">
+                  🏫
+                </div>
+                <div>
+                  <h3 className="font-cinzel font-bold text-slate-900 text-base">{installInstructions.title}</h3>
+                  <p className="text-xs text-slate-500">Vipulananda College School Management System</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowInstallModal(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-2 py-2">
+              <p className="text-xs text-slate-600 font-medium">Follow these steps in your browser:</p>
+              <div className="space-y-2 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                {installInstructions.steps.map((step, idx) => (
+                  <div key={idx} className="text-xs text-slate-800 font-semibold flex items-start space-x-2">
+                    <span>{step}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setShowInstallModal(false)}
+                className="px-5 py-2.5 rounded-xl bg-purple-900 hover:bg-purple-950 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+              >
+                Got It
               </button>
             </div>
           </div>
