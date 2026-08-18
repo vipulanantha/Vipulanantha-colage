@@ -182,7 +182,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({
       <div className="p-5 sm:p-8">
         {/* Header with Small School Logo at top */}
         <div className="text-center mb-5 sm:mb-6">
-          <div className="flex justify-center mb-2.5 sm:mb-3">
+          <div className="flex justify-center mb-2.5 sm:mb-3 animate-login-logo">
             <SchoolLogo size="md" showGlowRing={true} id="card-school-logo" />
           </div>
 

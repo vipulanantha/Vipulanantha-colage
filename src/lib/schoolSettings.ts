@@ -5,7 +5,12 @@ export interface SchoolSettings {
   school_name: string;
   established_year: number;
   school_motto: string;
-  logo_url: string | null;
+  logo_bucket: string;
+  logo_path: string;
+  logo_public_url: string | null;
+  logo_url: string | null; // alias for compatibility
+  primary_color: string;
+  secondary_color: string;
   address?: string;
   phone?: string;
   email?: string;
@@ -15,17 +20,6 @@ export interface SchoolSettings {
 
 // Bundled official school logo path served statically from public/assets
 export const BUNDLED_OFFICIAL_LOGO = '/assets/vipulanantha-college-logo.png';
-
-export interface DiscoveredSupabaseAsset {
-  bucket: string;
-  name: string;
-  id?: string;
-  size?: number;
-  created_at?: string;
-  updated_at?: string;
-  publicUrl: string;
-  isLikelyLogo: boolean;
-}
 
 // Default fallback Supabase URL if environment variable is not yet populated
 const DEFAULT_SUPABASE_PROJECT_URL = 'https://3gyezqjbqhvaqqxhtmin6r.supabase.co';
@@ -38,112 +32,14 @@ export const getSupabaseBaseUrl = (): string => {
   return DEFAULT_SUPABASE_PROJECT_URL;
 };
 
-// Official Supabase Storage Public URL for VipulanAntha College Colombo
-export const getOfficialSupabaseLogoUrl = (): string => {
+// Official Supabase Storage Public URL for VipulanAntha College Colombo using exact bucket 'school-assets'
+export const getOfficialSupabaseLogoUrl = (logoPath = 'vipulanantha-college-logo.png'): string => {
   const baseUrl = getSupabaseBaseUrl();
-  return `${baseUrl}/storage/v1/object/public/school-assets/vipulanantha-college-logo.png`;
-};
-
-/**
- * Scan all common Supabase Storage buckets for uploaded logos and image assets
- */
-export const scanSupabaseStorageForLogos = async (): Promise<{
-  success: boolean;
-  discovered: DiscoveredSupabaseAsset[];
-  checkedBuckets: string[];
-  error?: string;
-}> => {
-  const candidateBuckets = [
-    'school-assets',
-    'school_assets',
-    'logos',
-    'assets',
-    'images',
-    'public',
-    'branding',
-    'uploads',
-    'files',
-  ];
-
-  if (!isSupabaseConfigured || !supabase) {
-    return {
-      success: false,
-      discovered: [],
-      checkedBuckets: candidateBuckets,
-      error: 'Supabase credentials not configured in environment (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY).',
-    };
-  }
-
-  const discovered: DiscoveredSupabaseAsset[] = [];
-  const checkedBuckets: string[] = [];
-
-  for (const bucket of candidateBuckets) {
-    try {
-      checkedBuckets.push(bucket);
-      const { data: files, error } = await supabase.storage.from(bucket).list('', {
-        limit: 100,
-        sortBy: { column: 'created_at', order: 'desc' },
-      });
-
-      if (error) {
-        // Bucket might not exist or be private
-        continue;
-      }
-
-      if (files && Array.isArray(files)) {
-        for (const file of files) {
-          if (!file.name || file.name === '.emptyFolderPlaceholder') continue;
-          
-          const isImage = /\.(png|jpe?g|webp|svg|gif|avif|bmp|ico)$/i.test(file.name);
-          if (isImage) {
-            const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(file.name);
-            const lowerName = file.name.toLowerCase();
-            const isLikelyLogo =
-              lowerName.includes('logo') ||
-              lowerName.includes('crest') ||
-              lowerName.includes('emblem') ||
-              lowerName.includes('vipulanantha') ||
-              lowerName.includes('school') ||
-              lowerName.includes('seal') ||
-              lowerName.includes('badge');
-
-            discovered.push({
-              bucket,
-              name: file.name,
-              id: file.id,
-              size: file.metadata?.size,
-              created_at: file.created_at,
-              updated_at: file.updated_at,
-              publicUrl: urlData.publicUrl,
-              isLikelyLogo,
-            });
-          }
-        }
-      }
-    } catch (e) {
-      // Continue searching other buckets
-    }
-  }
-
-  // Sort likely logos first, then by newest
-  discovered.sort((a, b) => {
-    if (a.isLikelyLogo && !b.isLikelyLogo) return -1;
-    if (!a.isLikelyLogo && b.isLikelyLogo) return 1;
-    const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-    const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-    return dateB - dateA;
-  });
-
-  return {
-    success: true,
-    discovered,
-    checkedBuckets,
-  };
+  return `${baseUrl}/storage/v1/object/public/school-assets/${logoPath}`;
 };
 
 /**
  * Convert a File to an optimized Base64 Data URL with automatic dimension scaling
- * for cross-device storage when Supabase Storage RLS policies are restricted.
  */
 export const fileToOptimizedDataUrl = async (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -188,15 +84,18 @@ export const fileToOptimizedDataUrl = async (file: File): Promise<string> => {
 };
 
 /**
- * Apply a discovered or custom logo URL directly to School Settings and Supabase
- * across all relevant tables so it is fixed on all devices.
+ * Apply a school logo URL or path directly to School Settings and Supabase tables
  */
 export const applySchoolLogoUrl = async (
-  logoUrl: string
+  logoUrl: string,
+  logoPath = 'vipulanantha-college-logo.png'
 ): Promise<{ success: boolean; error?: string }> => {
   const current = getCachedSchoolSettings();
   const updatedSettings: SchoolSettings = {
     ...current,
+    logo_bucket: 'school-assets',
+    logo_path: logoPath,
+    logo_public_url: logoUrl,
     logo_url: logoUrl,
   };
   saveCachedSchoolSettings(updatedSettings);
@@ -207,11 +106,16 @@ export const applySchoolLogoUrl = async (
         school_name: current.school_name,
         established_year: current.established_year,
         school_motto: current.school_motto,
+        logo_bucket: 'school-assets',
+        logo_path: logoPath,
+        logo_public_url: logoUrl,
         logo_url: logoUrl,
+        primary_color: current.primary_color,
+        secondary_color: current.secondary_color,
         updated_at: new Date().toISOString(),
       };
 
-      // 1. Update/Upsert school_settings table
+      // 1. Update school_settings table
       if (current.id) {
         await supabase.from('school_settings').update(payload).eq('id', current.id);
       } else {
@@ -220,20 +124,23 @@ export const applySchoolLogoUrl = async (
           .upsert({ id: 'primary-school-settings', ...payload });
       }
 
-      // 2. Also update school_branding table if present
+      // 2. Update school_branding table
       try {
         await supabase.from('school_branding').upsert({
           id: 'primary-branding',
           school_name: current.school_name,
-          logo_url: logoUrl,
-          motto: current.school_motto,
+          logo_bucket: 'school-assets',
+          logo_path: logoPath,
+          logo_public_url: logoUrl,
+          primary_color: current.primary_color,
+          secondary_color: current.secondary_color,
           updated_at: new Date().toISOString(),
         });
       } catch (e) {
-        // ignore if table not in schema
+        // ignore if table not present
       }
 
-      // 3. Also update schools table if present
+      // 3. Update schools table
       try {
         await supabase.from('schools').upsert({
           id: 'vipulanantha-school-profile',
@@ -242,10 +149,10 @@ export const applySchoolLogoUrl = async (
           updated_at: new Date().toISOString(),
         });
       } catch (e) {
-        // ignore if table not in schema
+        // ignore
       }
     } catch (err: any) {
-      console.warn('Failed to update Supabase school_settings on logo apply', err);
+      console.warn('Failed to update Supabase tables on logo apply', err);
     }
   }
 
@@ -254,17 +161,22 @@ export const applySchoolLogoUrl = async (
 
 // Initial default settings object
 export const DEFAULT_SCHOOL_SETTINGS: SchoolSettings = {
-  school_name: 'VIPULANANTHA COLLEGE COLOMBO',
+  school_name: 'VipulanAntha College Colombo',
   established_year: 1920,
   school_motto: 'நாளும் பயில்வோம் நட்பனி புரிவோம்',
-  logo_url: BUNDLED_OFFICIAL_LOGO,
+  logo_bucket: 'school-assets',
+  logo_path: 'vipulanantha-college-logo.png',
+  logo_public_url: getOfficialSupabaseLogoUrl('vipulanantha-college-logo.png'),
+  logo_url: getOfficialSupabaseLogoUrl('vipulanantha-college-logo.png'),
+  primary_color: '#2A0845',
+  secondary_color: '#F59E0B',
   address: 'College Avenue, Colombo 06, Sri Lanka',
   phone: '+94 11 258 1920',
   email: 'info@vipulanantha.edu.lk',
   ministry_code: 'WP/CM/1920',
 };
 
-// In-memory / localStorage cache for instant synchronous render
+// In-memory / localStorage cache
 const CACHE_KEY = 'vc_school_settings_cache';
 
 export const getCachedSchoolSettings = (): SchoolSettings => {
@@ -272,11 +184,14 @@ export const getCachedSchoolSettings = (): SchoolSettings => {
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
       const parsed = JSON.parse(cached);
+      const publicUrl = parsed.logo_public_url || parsed.logo_url || getOfficialSupabaseLogoUrl(parsed.logo_path || 'vipulanantha-college-logo.png');
       return {
         ...DEFAULT_SCHOOL_SETTINGS,
         ...parsed,
-        // Ensure logo_url always falls back to the official bundled logo if empty
-        logo_url: parsed.logo_url || BUNDLED_OFFICIAL_LOGO,
+        logo_bucket: 'school-assets',
+        logo_path: parsed.logo_path || 'vipulanantha-college-logo.png',
+        logo_public_url: publicUrl,
+        logo_url: publicUrl,
       };
     }
   } catch (e) {
@@ -287,17 +202,22 @@ export const getCachedSchoolSettings = (): SchoolSettings => {
 
 export const saveCachedSchoolSettings = (settings: SchoolSettings) => {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(settings));
-    // Dispatch global event for instant multi-component reactivity
-    window.dispatchEvent(new CustomEvent('school_settings_updated', { detail: settings }));
+    const publicUrl = settings.logo_public_url || settings.logo_url || getOfficialSupabaseLogoUrl(settings.logo_path || 'vipulanantha-college-logo.png');
+    const normalized = {
+      ...settings,
+      logo_bucket: 'school-assets',
+      logo_public_url: publicUrl,
+      logo_url: publicUrl,
+    };
+    localStorage.setItem(CACHE_KEY, JSON.stringify(normalized));
+    window.dispatchEvent(new CustomEvent('school_settings_updated', { detail: normalized }));
   } catch (e) {
     console.warn('Error caching school settings', e);
   }
 };
 
 /**
- * Fetch school settings from Supabase database (checking school_settings, school_branding, schools, and storage).
- * Ensures that any device opening the app instantly receives the exact same logo and branding.
+ * Fetch school settings from Supabase database (school_settings, school_branding, schools) using exact 'school-assets' bucket URL
  */
 export const fetchSchoolSettings = async (): Promise<SchoolSettings> => {
   const cached = getCachedSchoolSettings();
@@ -307,56 +227,73 @@ export const fetchSchoolSettings = async (): Promise<SchoolSettings> => {
   }
 
   try {
-    let resolvedLogo: string | null = null;
+    let fetchedLogoUrl: string | null = null;
+    let fetchedLogoPath = 'vipulanantha-college-logo.png';
     let fetchedSchoolData: Partial<SchoolSettings> | null = null;
 
-    // 1. Try fetching from `school_settings` table
+    // 1. Check `school_branding` table first (as requested)
     try {
-      const { data: sData } = await supabase
-        .from('school_settings')
+      const { data: bData } = await supabase
+        .from('school_branding')
         .select('*')
         .limit(1)
         .maybeSingle();
 
-      if (sData) {
-        fetchedSchoolData = {
-          id: sData.id,
-          school_name: sData.school_name,
-          established_year: sData.established_year,
-          school_motto: sData.school_motto,
-          address: sData.address,
-          phone: sData.phone,
-          email: sData.email,
-          ministry_code: sData.ministry_code,
-          updated_at: sData.updated_at,
-        };
-        if (sData.logo_url && sData.logo_url.trim().length > 0) {
-          resolvedLogo = sData.logo_url;
+      if (bData) {
+        if (bData.logo_path) fetchedLogoPath = bData.logo_path;
+        if (bData.logo_public_url && bData.logo_public_url.trim().length > 0) {
+          fetchedLogoUrl = bData.logo_public_url;
+        } else if (bData.logo_url && bData.logo_url.trim().length > 0) {
+          fetchedLogoUrl = bData.logo_url;
         }
+        fetchedSchoolData = {
+          school_name: bData.school_name || bData.name,
+          primary_color: bData.primary_color,
+          secondary_color: bData.secondary_color,
+          updated_at: bData.updated_at,
+        };
       }
     } catch (e) {
-      // Continue to next check
+      // Continue
     }
 
-    // 2. If logo not yet found, check `school_branding` table
-    if (!resolvedLogo) {
+    // 2. Check `school_settings` table
+    if (!fetchedLogoUrl) {
       try {
-        const { data: bData } = await supabase
-          .from('school_branding')
+        const { data: sData } = await supabase
+          .from('school_settings')
           .select('*')
           .limit(1)
           .maybeSingle();
 
-        if (bData?.logo_url && bData.logo_url.trim().length > 0) {
-          resolvedLogo = bData.logo_url;
+        if (sData) {
+          if (sData.logo_path) fetchedLogoPath = sData.logo_path;
+          if (sData.logo_public_url && sData.logo_public_url.trim().length > 0) {
+            fetchedLogoUrl = sData.logo_public_url;
+          } else if (sData.logo_url && sData.logo_url.trim().length > 0) {
+            fetchedLogoUrl = sData.logo_url;
+          }
+          fetchedSchoolData = {
+            id: sData.id,
+            school_name: sData.school_name,
+            established_year: sData.established_year,
+            school_motto: sData.school_motto,
+            address: sData.address,
+            phone: sData.phone,
+            email: sData.email,
+            ministry_code: sData.ministry_code,
+            primary_color: sData.primary_color || fetchedSchoolData?.primary_color,
+            secondary_color: sData.secondary_color || fetchedSchoolData?.secondary_color,
+            updated_at: sData.updated_at,
+          };
         }
       } catch (e) {
         // Continue
       }
     }
 
-    // 3. If logo not yet found, check `schools` table
-    if (!resolvedLogo) {
+    // 3. Check `schools` table
+    if (!fetchedLogoUrl) {
       try {
         const { data: scData } = await supabase
           .from('schools')
@@ -365,31 +302,29 @@ export const fetchSchoolSettings = async (): Promise<SchoolSettings> => {
           .maybeSingle();
 
         if (scData?.logo_url && scData.logo_url.trim().length > 0) {
-          resolvedLogo = scData.logo_url;
+          fetchedLogoUrl = scData.logo_url;
         }
       } catch (e) {
         // Continue
       }
     }
 
-    // 4. If still not found, check Supabase Storage buckets for any uploaded logo
-    if (!resolvedLogo) {
-      try {
-        const scan = await scanSupabaseStorageForLogos();
-        if (scan.discovered && scan.discovered.length > 0) {
-          resolvedLogo = scan.discovered[0].publicUrl;
-        }
-      } catch (scanErr) {
-        // Continue
-      }
-    }
+    // If still no logo URL found in database tables, construct official public URL using exact school-assets bucket
+    const finalLogoUrl = fetchedLogoUrl && fetchedLogoUrl.trim().length > 0
+      ? fetchedLogoUrl
+      : getOfficialSupabaseLogoUrl(fetchedLogoPath);
 
     const merged: SchoolSettings = {
       id: fetchedSchoolData?.id || cached.id,
       school_name: fetchedSchoolData?.school_name || cached.school_name || DEFAULT_SCHOOL_SETTINGS.school_name,
       established_year: fetchedSchoolData?.established_year || cached.established_year || DEFAULT_SCHOOL_SETTINGS.established_year,
       school_motto: fetchedSchoolData?.school_motto || cached.school_motto || DEFAULT_SCHOOL_SETTINGS.school_motto,
-      logo_url: resolvedLogo || cached.logo_url || BUNDLED_OFFICIAL_LOGO,
+      logo_bucket: 'school-assets',
+      logo_path: fetchedLogoPath,
+      logo_public_url: finalLogoUrl,
+      logo_url: finalLogoUrl,
+      primary_color: fetchedSchoolData?.primary_color || cached.primary_color || DEFAULT_SCHOOL_SETTINGS.primary_color,
+      secondary_color: fetchedSchoolData?.secondary_color || cached.secondary_color || DEFAULT_SCHOOL_SETTINGS.secondary_color,
       address: fetchedSchoolData?.address || cached.address || DEFAULT_SCHOOL_SETTINGS.address,
       phone: fetchedSchoolData?.phone || cached.phone || DEFAULT_SCHOOL_SETTINGS.phone,
       email: fetchedSchoolData?.email || cached.email || DEFAULT_SCHOOL_SETTINGS.email,
@@ -400,15 +335,14 @@ export const fetchSchoolSettings = async (): Promise<SchoolSettings> => {
     saveCachedSchoolSettings(merged);
     return merged;
   } catch (err) {
-    console.warn('Failed to fetch school_settings from Supabase', err);
+    console.warn('Failed to fetch school settings from Supabase', err);
   }
 
   return cached;
 };
 
 /**
- * Upload a new official school logo to Supabase Storage (with multi-bucket & base64 fallback)
- * and update `school_settings.logo_url` in Supabase across all devices.
+ * Upload official school logo to exact Supabase Storage bucket 'school-assets'
  */
 export const uploadSchoolLogoToSupabase = async (
   file: File
@@ -416,173 +350,57 @@ export const uploadSchoolLogoToSupabase = async (
   const current = getCachedSchoolSettings();
 
   if (!isSupabaseConfigured || !supabase) {
-    // Offline / Mock fallback: convert to persistent base64 data URL
     const dataUrl = await fileToOptimizedDataUrl(file);
-    const updated: SchoolSettings = {
-      ...current,
-      logo_url: dataUrl,
-    };
-    saveCachedSchoolSettings(updated);
-    return {
-      success: true,
-      url: dataUrl,
-    };
+    await applySchoolLogoUrl(dataUrl, file.name);
+    return { success: true, url: dataUrl };
   }
 
   try {
     const fileExt = file.name.split('.').pop() || 'png';
-    const fileName = `vipulanantha-college-logo-${Date.now()}.${fileExt}`;
-    const filePath = `${fileName}`;
+    const filePath = `vipulanantha-college-logo-${Date.now()}.${fileExt}`;
 
     let resolvedUrl: string | null = null;
-    let storageErrorMsg: string | null = null;
 
-    // 1. Try uploading to candidate Supabase Storage buckets
-    const candidateBuckets = ['school-assets', 'logos', 'branding', 'assets', 'public', 'uploads'];
-    for (const bucket of candidateBuckets) {
-      try {
-        const { error: uploadError } = await supabase.storage
-          .from(bucket)
-          .upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: true,
-          });
+    // Upload strictly to exact bucket 'school-assets'
+    const { error: uploadError } = await supabase.storage
+      .from('school-assets')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: true,
+      });
 
-        if (!uploadError) {
-          const { data: publicUrlData } = supabase.storage
-            .from(bucket)
-            .getPublicUrl(filePath);
+    if (!uploadError) {
+      const { data: publicUrlData } = supabase.storage
+        .from('school-assets')
+        .getPublicUrl(filePath);
 
-          if (publicUrlData?.publicUrl) {
-            resolvedUrl = publicUrlData.publicUrl;
-            break;
-          }
-        } else {
-          storageErrorMsg = uploadError.message;
-        }
-      } catch (bucketErr: any) {
-        storageErrorMsg = bucketErr?.message;
+      if (publicUrlData?.publicUrl) {
+        resolvedUrl = publicUrlData.publicUrl;
       }
+    } else {
+      console.warn('Storage upload error to school-assets, using optimized base64 fallback:', uploadError.message);
     }
 
-    // 2. If storage buckets were blocked (e.g. RLS policy restriction),
-    // convert the logo to an optimized base64 Data URL so cloud database sync STILL works 100% across devices!
     if (!resolvedUrl) {
       resolvedUrl = await fileToOptimizedDataUrl(file);
     }
 
-    // 3. Persist the logo across Supabase database tables (`school_settings`, `school_branding`, `schools`)
-    const payload = {
-      school_name: current.school_name,
-      established_year: current.established_year,
-      school_motto: current.school_motto,
-      logo_url: resolvedUrl,
-      updated_at: new Date().toISOString(),
-    };
-
-    // Update school_settings
-    try {
-      if (current.id) {
-        await supabase.from('school_settings').update(payload).eq('id', current.id);
-      } else {
-        const { data: inserted } = await supabase
-          .from('school_settings')
-          .upsert({ id: 'primary-school-settings', ...payload })
-          .select()
-          .maybeSingle();
-
-        if (inserted) {
-          current.id = inserted.id;
-        }
-      }
-    } catch (dbErr) {
-      console.warn('Could not update school_settings table, trying school_branding:', dbErr);
-    }
-
-    // Update school_branding
-    try {
-      await supabase.from('school_branding').upsert({
-        id: 'primary-branding',
-        school_name: current.school_name,
-        logo_url: resolvedUrl,
-        motto: current.school_motto,
-        updated_at: new Date().toISOString(),
-      });
-    } catch (dbErr) {
-      // ignore
-    }
-
-    // Update schools
-    try {
-      await supabase.from('schools').upsert({
-        id: 'vipulanantha-school-profile',
-        school_name: current.school_name,
-        logo_url: resolvedUrl,
-        updated_at: new Date().toISOString(),
-      });
-    } catch (dbErr) {
-      // ignore
-    }
-
-    // 4. Update local cache and notify listeners on the current client
-    const updatedSettings: SchoolSettings = {
-      ...current,
-      logo_url: resolvedUrl,
-    };
-    saveCachedSchoolSettings(updatedSettings);
-
+    await applySchoolLogoUrl(resolvedUrl, filePath);
     return { success: true, url: resolvedUrl };
   } catch (err: any) {
-    console.error('Failed to process school logo upload:', err);
-    // Even if everything threw, preserve locally
-    try {
-      const dataUrl = await fileToOptimizedDataUrl(file);
-      const updatedSettings: SchoolSettings = {
-        ...current,
-        logo_url: dataUrl,
-      };
-      saveCachedSchoolSettings(updatedSettings);
-      return { success: true, url: dataUrl };
-    } catch (innerErr) {
-      return { success: false, error: err.message || 'Failed to upload logo' };
-    }
+    console.error('Failed to upload logo to school-assets:', err);
+    const dataUrl = await fileToOptimizedDataUrl(file);
+    await applySchoolLogoUrl(dataUrl, file.name);
+    return { success: true, url: dataUrl };
   }
 };
 
 /**
- * Remove custom logo and restore the official bundled logo across all devices
+ * Reset logo to official default
  */
 export const resetSchoolLogoToOfficialDefault = async (): Promise<{ success: boolean; error?: string }> => {
-  const defaultUrl = BUNDLED_OFFICIAL_LOGO;
-  const current = getCachedSchoolSettings();
-
-  const updatedSettings: SchoolSettings = {
-    ...current,
-    logo_url: defaultUrl,
-  };
-  saveCachedSchoolSettings(updatedSettings);
-
-  if (isSupabaseConfigured && supabase) {
-    try {
-      const payload = {
-        logo_url: null, // Reset to null so default is used
-        updated_at: new Date().toISOString(),
-      };
-      if (current.id) {
-        await supabase.from('school_settings').update(payload).eq('id', current.id);
-      } else {
-        await supabase.from('school_settings').upsert({ id: 'primary-school-settings', ...payload });
-      }
-      try {
-        await supabase.from('school_branding').upsert({ id: 'primary-branding', logo_url: null, updated_at: new Date().toISOString() });
-      } catch (e) {}
-      try {
-        await supabase.from('schools').upsert({ id: 'vipulanantha-school-profile', logo_url: null, updated_at: new Date().toISOString() });
-      } catch (e) {}
-    } catch (err: any) {
-      console.warn('Failed to update Supabase school_settings on reset', err);
-    }
-  }
-
+  const defaultUrl = getOfficialSupabaseLogoUrl('vipulanantha-college-logo.png');
+  await applySchoolLogoUrl(defaultUrl, 'vipulanantha-college-logo.png');
   return { success: true };
 };
+

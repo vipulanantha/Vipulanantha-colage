@@ -139,4 +139,21 @@
   -webkit-text-fill-color: transparent;
 }
 
+@keyframes login-logo-fade-scale {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+    filter: drop-shadow(0 0 0px rgba(212, 175, 55, 0));
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: drop-shadow(0 0 16px rgba(212, 175, 55, 0.35));
+  }
+}
+
+.animate-login-logo {
+  animation: login-logo-fade-scale 1000ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 

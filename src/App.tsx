@@ -29,7 +29,7 @@ export default function App() {
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [lang, setLang] = useState<'en' | 'ta'>('en');
 
-  // Trigger initial 2-second animation sequence
+  // Trigger initial quick intro animation
   useEffect(() => {
     runIntroAnimation();
   }, []);
@@ -38,16 +38,16 @@ export default function App() {
     setAnimStage(0);
     setIsAnimationCompleted(false);
 
-    // Step 1: Text reveal after 850ms
+    // Step 1: Text reveal quickly after 200ms
     const t1 = setTimeout(() => {
       setAnimStage(1);
-    }, 850);
+    }, 200);
 
-    // Step 2: Card reveal after 1600ms
+    // Step 2: Card reveal quickly after 400ms
     const t2 = setTimeout(() => {
       setAnimStage(2);
       setIsAnimationCompleted(true);
-    }, 1650);
+    }, 400);
 
     return () => {
       clearTimeout(t1);

@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import {
   getCachedSchoolSettings,
   fetchSchoolSettings,
-  BUNDLED_OFFICIAL_LOGO,
-  getOfficialSupabaseLogoUrl,
   SchoolSettings,
+  getOfficialSupabaseLogoUrl,
 } from '../lib/schoolSettings';
+import { AlertCircle } from 'lucide-react';
 
 interface SchoolLogoProps {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'intro' | string;
@@ -25,38 +25,44 @@ export const SchoolLogo: React.FC<SchoolLogoProps> = ({
   const [settings, setSettings] = useState<SchoolSettings>(getCachedSchoolSettings());
   const [imgSrc, setImgSrc] = useState<string>(() => {
     if (customLogoUrl && customLogoUrl.trim().length > 0) return customLogoUrl;
-    const initial = getCachedSchoolSettings().logo_url;
-    return initial && initial.trim().length > 0 ? initial : BUNDLED_OFFICIAL_LOGO;
+    const cached = getCachedSchoolSettings();
+    const initial = cached.logo_public_url || cached.logo_url;
+    return initial && initial.trim().length > 0 ? initial : getOfficialSupabaseLogoUrl(cached.logo_path);
   });
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [hasError, setHasError] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   // Sync with global school settings & listen for live Supabase updates
   useEffect(() => {
     let isMounted = true;
-
-    fetchSchoolSettings().then((s) => {
-      if (isMounted) {
-        setSettings(s);
-        if (!customLogoUrl) {
-          setImgSrc(s.logo_url || BUNDLED_OFFICIAL_LOGO);
-        }
-      }
-    });
 
     const handleSettingsUpdated = (e: Event) => {
       const customEvent = e as CustomEvent<SchoolSettings>;
       if (customEvent.detail && isMounted) {
         setSettings(customEvent.detail);
         if (!customLogoUrl) {
-          setImgSrc(customEvent.detail.logo_url || BUNDLED_OFFICIAL_LOGO);
+          const url = customEvent.detail.logo_public_url || customEvent.detail.logo_url || getOfficialSupabaseLogoUrl(customEvent.detail.logo_path);
+          setImgSrc(url);
           setHasError(false);
-          setIsLoading(true);
+          setIsLoading(false);
         }
       }
     };
 
     window.addEventListener('school_settings_updated', handleSettingsUpdated);
+
+    // Background fetch to update if newer remote settings exist
+    fetchSchoolSettings().then((s) => {
+      if (isMounted && !customLogoUrl) {
+        setSettings(s);
+        const url = s.logo_public_url || s.logo_url || getOfficialSupabaseLogoUrl(s.logo_path);
+        if (url !== imgSrc) {
+          setImgSrc(url);
+        }
+      }
+    }).catch(() => {});
+
     return () => {
       isMounted = false;
       window.removeEventListener('school_settings_updated', handleSettingsUpdated);
@@ -71,7 +77,7 @@ export const SchoolLogo: React.FC<SchoolLogoProps> = ({
     }
   }, [customLogoUrl]);
 
-  // Size mapping matching the Immersive UI proportions
+  // Size mapping matching proportions
   const sizeMap: Record<
     string,
     {
@@ -81,7 +87,6 @@ export const SchoolLogo: React.FC<SchoolLogoProps> = ({
       ringMiddle: string;
       borderThickness: string;
       glowSize: string;
-      textFallbackSize: string;
     }
   > = {
     xs: {
@@ -91,7 +96,6 @@ export const SchoolLogo: React.FC<SchoolLogoProps> = ({
       ringMiddle: 'w-9 h-9 sm:w-10 sm:h-10',
       borderThickness: 'border',
       glowSize: 'blur-2xs',
-      textFallbackSize: 'text-[6px]',
     },
     sm: {
       container: 'w-10 h-10 sm:w-12 sm:h-12',
@@ -100,7 +104,6 @@ export const SchoolLogo: React.FC<SchoolLogoProps> = ({
       ringMiddle: 'w-11 h-11 sm:w-13 sm:h-13',
       borderThickness: 'border-2',
       glowSize: 'blur-xs',
-      textFallbackSize: 'text-[7px]',
     },
     md: {
       container: 'w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28',
@@ -109,7 +112,6 @@ export const SchoolLogo: React.FC<SchoolLogoProps> = ({
       ringMiddle: 'w-22 h-22 sm:w-26 sm:h-26 md:w-30 md:h-30',
       borderThickness: 'border-2 sm:border-3',
       glowSize: 'blur-sm',
-      textFallbackSize: 'text-[9px] sm:text-[10px]',
     },
     lg: {
       container: 'w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36',
@@ -118,7 +120,6 @@ export const SchoolLogo: React.FC<SchoolLogoProps> = ({
       ringMiddle: 'w-30 h-30 sm:w-34 sm:h-34 md:w-38 md:h-38',
       borderThickness: 'border-3 sm:border-4',
       glowSize: 'blur-md',
-      textFallbackSize: 'text-xs sm:text-sm',
     },
     xl: {
       container: 'w-36 h-36 sm:w-44 sm:h-44 md:w-52 md:h-52',
@@ -127,7 +128,6 @@ export const SchoolLogo: React.FC<SchoolLogoProps> = ({
       ringMiddle: 'w-38 h-38 sm:w-46 sm:h-46 md:w-54 md:h-54',
       borderThickness: 'border-3 sm:border-4 md:border-5',
       glowSize: 'blur-lg',
-      textFallbackSize: 'text-sm sm:text-base font-bold',
     },
     intro: {
       container: 'w-36 h-36 xs:w-44 xs:h-44 sm:w-56 sm:h-56 md:w-64 md:h-64',
@@ -136,25 +136,40 @@ export const SchoolLogo: React.FC<SchoolLogoProps> = ({
       ringMiddle: 'w-38 h-38 xs:w-48 xs:h-48 sm:w-60 sm:h-60 md:w-68 md:h-68',
       borderThickness: 'border-3 sm:border-4 md:border-5',
       glowSize: 'blur-xl',
-      textFallbackSize: 'text-xs sm:text-base font-bold',
     },
   };
 
   const currentSize = sizeMap[size] || sizeMap.md;
 
-  const handleImageError = () => {
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     setIsLoading(false);
-    // If current source failed and isn't already the bundled local path, fall back to bundled official logo
-    if (imgSrc !== BUNDLED_OFFICIAL_LOGO) {
-      setImgSrc(BUNDLED_OFFICIAL_LOGO);
-    } else {
-      setHasError(true);
-    }
+    setHasError(true);
+    const target = e.target as HTMLImageElement;
+    const errObj = {
+      targetUrl: imgSrc,
+      bucket: 'school-assets',
+      path: settings.logo_path || 'vipulanantha-college-logo.png',
+      errorMessage: target?.currentSrc || 'Image load error',
+    };
+    setErrorMessage('School logo could not be loaded.');
+    console.error(
+      '[School Branding ERROR]\nLogo URL:\n',
+      imgSrc,
+      '\n\nError details:\n',
+      errObj
+    );
   };
 
   const handleImageLoad = () => {
     setIsLoading(false);
     setHasError(false);
+    console.log(
+      '[School Branding]\nBucket: school-assets\nPath:',
+      settings.logo_path || 'vipulanantha-college-logo.png',
+      '\nPublic URL:',
+      imgSrc,
+      '\nLogo loaded successfully'
+    );
   };
 
   return (
@@ -165,11 +180,9 @@ export const SchoolLogo: React.FC<SchoolLogoProps> = ({
       {/* Outer Radiance Glow Halo Rings */}
       {showGlowRing && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          {/* Subtle Ambient Radial Glow */}
           <div
             className={`absolute ${currentSize.ringOuter} rounded-full bg-gradient-to-r from-amber-400/30 via-purple-500/20 to-indigo-500/30 ${currentSize.glowSize} animate-pulse`}
           />
-          {/* Concentric Golden Ring Frame */}
           <div
             className={`absolute ${currentSize.ringMiddle} rounded-full border border-amber-400/40 opacity-80`}
           />
@@ -181,7 +194,7 @@ export const SchoolLogo: React.FC<SchoolLogoProps> = ({
         className={`relative z-10 w-full h-full bg-white rounded-full shadow-2xl flex items-center justify-center ${currentSize.borderThickness} border-white overflow-hidden`}
       >
         {isLoading && !hasError && (
-          <div className="absolute inset-0 bg-slate-100 animate-pulse flex items-center justify-center">
+          <div className="absolute inset-0 bg-slate-100 animate-pulse flex items-center justify-center z-20">
             <div className="w-4 h-4 border-2 border-purple-900 border-t-transparent rounded-full animate-spin" />
           </div>
         )}
@@ -196,17 +209,22 @@ export const SchoolLogo: React.FC<SchoolLogoProps> = ({
             onLoad={handleImageLoad}
             onError={handleImageError}
             draggable={false}
+            crossOrigin="anonymous"
           />
         ) : (
-          /* Simple Text Fallback - Strictly No fake generated logos */
-          <div className="w-full h-full rounded-full bg-purple-950 p-2 flex flex-col items-center justify-center text-center text-amber-200">
-            <div className={`font-cinzel font-bold text-amber-300 ${currentSize.textFallbackSize} leading-tight`}>
-              VIPULANANTHA COLLEGE COLOMBO
+          /* Error Display as requested - strictly no silent replacement */
+          <div className="w-full h-full bg-rose-950/90 p-2 flex flex-col items-center justify-center text-center text-rose-200">
+            <AlertCircle className="w-5 h-5 text-rose-400 mb-1" />
+            <div className="text-[9px] sm:text-[10px] font-bold leading-tight text-rose-100">
+              {errorMessage}
             </div>
-            <div className="text-[7px] sm:text-[9px] text-purple-200 mt-0.5">ESTD 1920</div>
+            <div className="text-[7px] text-rose-300 mt-0.5 truncate max-w-full px-1">
+              school-assets
+            </div>
           </div>
         )}
       </div>
     </div>
   );
 };
+
