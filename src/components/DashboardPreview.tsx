@@ -1719,9 +1719,7 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ session, onL
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-900 text-amber-300 font-bold flex items-center justify-center text-lg shadow">
-                  🏫
-                </div>
+                <SchoolLogo size="sm" showGlowRing={false} className="w-10 h-10 shrink-0" />
                 <div>
                   <h3 className="font-cinzel font-bold text-slate-900 text-base">{installInstructions.title}</h3>
                   <p className="text-xs text-slate-500">Vipulananda College School Management System</p>
