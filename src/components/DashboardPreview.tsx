@@ -735,20 +735,6 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ session, onL
               <span>🚨 Emergency SOS</span>
             </button>
 
-            {/* Supabase Connection Status Pill */}
-            <button
-              onClick={() => setShowSupabaseModal(true)}
-              className={`flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all border cursor-pointer ${
-                supabaseStatus?.isConnected
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30 hover:bg-emerald-500/30'
-                  : 'bg-amber-500/20 text-amber-300 border-amber-400/30 hover:bg-amber-500/30'
-              }`}
-              title="Click to check Supabase connection & view database setup"
-            >
-              <span className={`w-2 h-2 rounded-full ${supabaseStatus?.isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-              <span>{supabaseStatus?.isConnected ? 'Supabase Live' : 'Supabase Status'}</span>
-            </button>
-
             <div className="hidden lg:flex items-center bg-white/10 rounded-full px-3 py-1 text-xs text-purple-100 border border-white/10">
               <Calendar className="w-3.5 h-3.5 mr-1.5 text-amber-300" />
               <span>Term 2 • Academic Year 2026</span>

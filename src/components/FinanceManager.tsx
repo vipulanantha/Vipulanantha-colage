@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { FeeInvoice, Student } from '../types/sms';
-import { DollarSign, Plus, Search, Receipt, CheckCircle, AlertCircle, Clock, Download, X } from 'lucide-react';
+import { DollarSign, Plus, Search, Receipt, CheckCircle, AlertCircle, Clock, Download, X, Layers } from 'lucide-react';
 
 interface FinanceManagerProps {
   fees: FeeInvoice[];
@@ -20,14 +20,22 @@ export const FinanceManager: React.FC<FinanceManagerProps> = ({
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<FeeInvoice | null>(null);
 
-  // Form State
+  // Single Form State
   const [studentId, setStudentId] = useState(students[0]?.id || '');
   const [category, setCategory] = useState<FeeInvoice['category']>('Term Facility Fee');
   const [amount, setAmount] = useState(15000);
   const [discount, setDiscount] = useState(0);
   const [dueDate, setDueDate] = useState('2026-08-30');
+
+  // Bulk Form State (Grade 1 to AL)
+  const [bulkGrade, setBulkGrade] = useState('Grade 10');
+  const [bulkCategory, setBulkCategory] = useState<FeeInvoice['category']>('Term Facility Fee');
+  const [bulkAmount, setBulkAmount] = useState(15000);
+  const [bulkDueDate, setBulkDueDate] = useState('2026-08-30');
+  const [bulkSuccessMsg, setBulkSuccessMsg] = useState<string | null>(null);
 
   // Stats
   const totalBilled = fees.reduce((acc, f) => acc + f.amount, 0);
@@ -52,7 +60,7 @@ export const FinanceManager: React.FC<FinanceManagerProps> = ({
 
     const net = Math.max(amount - discount, 0);
     onAddInvoice({
-      invoiceNo: `INV-2026-${String(fees.length + 1).padStart(3, '0')}`,
+      invoiceNo: `INV-2026-${String(fees.length + Math.floor(Math.random() * 900) + 100)}`,
       studentId: st.id,
       studentName: st.fullName,
       admissionNo: st.admissionNo,
@@ -69,6 +77,45 @@ export const FinanceManager: React.FC<FinanceManagerProps> = ({
     setShowAddModal(false);
   };
 
+  const handleBulkInvoiceGenerate = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Filter students by grade or class
+    const targetStudents = students.filter(
+      (s) => bulkGrade === 'ALL' || s.grade === bulkGrade || `${s.grade}-${s.section}` === bulkGrade
+    );
+
+    if (targetStudents.length === 0) {
+      alert(`No active students found in ${bulkGrade}. Please select another grade.`);
+      return;
+    }
+
+    let createdCount = 0;
+    targetStudents.forEach((st, idx) => {
+      const invNo = `BLK-${Date.now().toString().slice(-4)}-${idx + 1}`;
+      onAddInvoice({
+        invoiceNo: invNo,
+        studentId: st.id,
+        studentName: st.fullName,
+        admissionNo: st.admissionNo,
+        grade: `${st.grade}-${st.section}`,
+        category: bulkCategory,
+        amount: Number(bulkAmount),
+        discount: 0,
+        paidAmount: 0,
+        balanceAmount: Number(bulkAmount),
+        dueDate: bulkDueDate,
+        status: 'Pending',
+      });
+      createdCount++;
+    });
+
+    setBulkSuccessMsg(`Successfully generated ${createdCount} bulk invoices for ${bulkGrade}!`);
+    setTimeout(() => {
+      setBulkSuccessMsg(null);
+      setShowBulkModal(false);
+    }, 2000);
+  };
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -81,18 +128,27 @@ export const FinanceManager: React.FC<FinanceManagerProps> = ({
             </span>
           </h2>
           <p className="text-xs text-slate-500">
-            Term fees, science lab funds, bursary discounts, receipts and outstanding ledger
+            Term fees, science lab funds, bursary discounts, receipts and bulk class invoicing (Grades 1 to A/L)
           </p>
         </div>
 
         {canEdit && (
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center space-x-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#2A0845] to-[#3B185F] text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4 text-amber-300" />
-            <span>+ Generate Invoice</span>
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setShowBulkModal(true)}
+              className="flex items-center space-x-1.5 px-3.5 py-2.5 rounded-xl bg-purple-900 hover:bg-purple-950 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer"
+            >
+              <Layers className="w-4 h-4 text-amber-300" />
+              <span>Bulk Class Invoice</span>
+            </button>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center space-x-1.5 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-[#2A0845] to-[#3B185F] text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4 text-amber-300" />
+              <span>+ Single Invoice</span>
+            </button>
+          </div>
         )}
       </div>
 
@@ -385,6 +441,125 @@ export const FinanceManager: React.FC<FinanceManagerProps> = ({
                   className="flex-1 py-2.5 rounded-xl bg-[#2A0845] hover:bg-[#3B185F] text-white font-bold"
                 >
                   Create Invoice
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Class Invoice Modal (Grades 1 to A/L) */}
+      {showBulkModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-purple-950/75 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-purple-100 overflow-hidden my-auto p-5 sm:p-7">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-900 flex items-center justify-center font-bold">
+                  <Layers className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 font-cinzel">Bulk Class Invoicing</h3>
+                  <p className="text-[11px] text-slate-500">Generate fee invoices for entire grade (Grade 1 to A/L)</p>
+                </div>
+              </div>
+              <button onClick={() => setShowBulkModal(false)} className="p-1 text-slate-400 hover:text-slate-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {bulkSuccessMsg && (
+              <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-xs font-bold flex items-center space-x-2">
+                <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{bulkSuccessMsg}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleBulkInvoiceGenerate} className="space-y-3 text-xs sm:text-sm">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Select Grade / Class Level</label>
+                <select
+                  value={bulkGrade}
+                  onChange={(e) => setBulkGrade(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold text-slate-900"
+                >
+                  <option value="ALL">All School Students (Grade 1 to A/L)</option>
+                  <optgroup label="Primary School">
+                    <option value="Grade 1">Grade 1</option>
+                    <option value="Grade 2">Grade 2</option>
+                    <option value="Grade 3">Grade 3</option>
+                    <option value="Grade 4">Grade 4</option>
+                    <option value="Grade 5">Grade 5</option>
+                  </optgroup>
+                  <optgroup label="Junior Secondary">
+                    <option value="Grade 6">Grade 6</option>
+                    <option value="Grade 7">Grade 7</option>
+                    <option value="Grade 8">Grade 8</option>
+                    <option value="Grade 9">Grade 9</option>
+                  </optgroup>
+                  <optgroup label="Senior Secondary (O/L)">
+                    <option value="Grade 10">Grade 10</option>
+                    <option value="Grade 11">Grade 11</option>
+                  </optgroup>
+                  <optgroup label="Collegiate / Advanced Level (A/L)">
+                    <option value="Grade 12">Grade 12 (A/L Science / Commerce / Arts)</option>
+                    <option value="Grade 13">Grade 13 (A/L Science / Commerce / Arts)</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Fee Category</label>
+                <select
+                  value={bulkCategory}
+                  onChange={(e) => setBulkCategory(e.target.value as FeeInvoice['category'])}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl"
+                >
+                  <option value="Term Facility Fee">Term Facility Fee</option>
+                  <option value="Lab & Science Equipment">Lab & Science Equipment</option>
+                  <option value="Sports & Society Fund">Sports & Society Fund</option>
+                  <option value="Examination Fee">Examination Fee</option>
+                  <option value="Library & ICT">Library & ICT</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Standard Amount Per Student (LKR)</label>
+                <input
+                  type="number"
+                  min={500}
+                  value={bulkAmount}
+                  onChange={(e) => setBulkAmount(Number(e.target.value))}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Invoice Due Date</label>
+                <input
+                  type="date"
+                  value={bulkDueDate}
+                  onChange={(e) => setBulkDueDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl"
+                />
+              </div>
+
+              <div className="bg-amber-50 p-3 rounded-xl border border-amber-200 text-[11px] text-amber-900 leading-relaxed">
+                ℹ️ <strong>Bulk Automation:</strong> This will instantly create individual pending fee invoices for all active students enrolled in the selected grade/section, logging them in the bursary ledgers.
+              </div>
+
+              <div className="flex space-x-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowBulkModal(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 rounded-xl bg-purple-900 hover:bg-purple-950 text-white font-bold text-xs shadow-md"
+                >
+                  Generate Bulk Invoices
                 </button>
               </div>
             </form>
