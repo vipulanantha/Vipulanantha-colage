@@ -1,20 +1,25 @@
 {
-  "name": "Vipulanantha College SMS",
-  "short_name": "Vipulanantha SMS",
+  "name": "Vipulanantha College School Management System",
+  "short_name": "Vipulanantha College",
+  "description": "Official School Management System of Vipulanantha College",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#2A0845",
+  "orientation": "portrait-primary",
+  "background_color": "#F8FAFC",
   "theme_color": "#2A0845",
   "icons": [
     {
       "src": "/assets/vipulanantha-college-logo.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/assets/vipulanantha-college-logo.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }

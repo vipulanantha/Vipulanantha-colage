@@ -192,6 +192,32 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ session, onL
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
   const [isCopiedSql, setIsCopiedSql] = useState(false);
 
+  // PWA Install Prompt State
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isAppInstalled, setIsAppInstalled] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    window.addEventListener('appinstalled', () => {
+      setIsAppInstalled(true);
+      setDeferredPrompt(null);
+    });
+
+    if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) {
+      setIsAppInstalled(true);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
   const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4500);
@@ -726,24 +752,41 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ session, onL
           </div>
 
           <div className="flex items-center space-x-1.5 sm:space-x-3">
-            {/* Download / Install App for Any Device Button */}
-            <button
-              onClick={() => {
-                const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-                if (/android/i.test(userAgent)) {
-                  alert('📱 Android PWA Installation:\n\n1. Tap the browser menu (3 dots at top right).\n2. Select "Install app" or "Add to Home screen".');
-                } else if (/iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream) {
-                  alert('🍎 iOS / iPadOS Installation:\n\n1. Tap the Share button at the bottom of Safari.\n2. Scroll down and select "Add to Home Screen".');
-                } else {
-                  alert('💻 Desktop Web App Installation:\n\n1. Click the install icon (🖥️ / ➕) in your browser address bar (Chrome, Edge, or Safari).\n2. Or bookmark this app for instant access on any device.');
-                }
-              }}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-400 hover:bg-amber-300 text-purple-950 shadow-md transition-all cursor-pointer shrink-0"
-              title="Download / Install App on Mobile or Desktop"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">Download App</span>
-            </button>
+            {/* PWA Install App Button */}
+            {!isAppInstalled && (
+              <button
+                onClick={async () => {
+                  if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    if (outcome === 'accepted') {
+                      setIsAppInstalled(true);
+                    }
+                    setDeferredPrompt(null);
+                  } else {
+                    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+                    if (/android/i.test(userAgent)) {
+                      alert('📱 Android PWA Installation:\n\n1. Tap the browser menu (3 dots at top right).\n2. Select "Install app" or "Add to Home screen".');
+                    } else if (/iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream) {
+                      alert('🍎 iOS / iPadOS Installation:\n\n1. Tap the Share button at the bottom of Safari.\n2. Scroll down and select "Add to Home Screen".');
+                    } else {
+                      alert('💻 Desktop Web App Installation:\n\n1. Click the install icon (🖥️ / ➕) in your browser address bar (Chrome, Edge, or Safari).\n2. Or bookmark this app for instant access on any device.');
+                    }
+                  }
+                }}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-400 hover:bg-amber-300 text-purple-950 shadow-md transition-all cursor-pointer shrink-0"
+                title="Install Vipulananda College SMS App"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Install App</span>
+              </button>
+            )}
+
+            {isAppInstalled && (
+              <div className="hidden sm:flex items-center space-x-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                <span>✓ App Installed</span>
+              </div>
+            )}
 
             {/* Quick Emergency Center Trigger Button */}
             <button
