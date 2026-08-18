@@ -119,6 +119,7 @@ import {
   Building,
   Building2,
   Activity,
+  Download,
 } from 'lucide-react';
 
 interface DashboardPreviewProps {
@@ -725,6 +726,25 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ session, onL
           </div>
 
           <div className="flex items-center space-x-2 sm:space-x-4">
+            {/* Download / Install App for Any Device Button */}
+            <button
+              onClick={() => {
+                const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+                if (/android/i.test(userAgent)) {
+                  alert('📱 Android PWA Installation:\n\n1. Tap the browser menu (3 dots at top right).\n2. Select "Install app" or "Add to Home screen".');
+                } else if (/iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream) {
+                  alert('🍎 iOS / iPadOS Installation:\n\n1. Tap the Share button at the bottom of Safari.\n2. Scroll down and select "Add to Home Screen".');
+                } else {
+                  alert('💻 Desktop Web App Installation:\n\n1. Click the install icon (🖥️ / ➕) in your browser address bar (Chrome, Edge, or Safari).\n2. Or bookmark this app for instant access on any device.');
+                }
+              }}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-400 hover:bg-amber-300 text-purple-950 shadow-md transition-all cursor-pointer shrink-0"
+              title="Download / Install App on Mobile or Desktop"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">Download App</span>
+            </button>
+
             {/* Quick Emergency Center Trigger Button */}
             <button
               onClick={() => setActiveTab('emergency')}
