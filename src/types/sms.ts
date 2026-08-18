@@ -1,5 +1,48 @@
 export type PortalRole = 'staff' | 'student' | 'parent' | 'admin' | 'principal' | 'accountant' | 'librarian';
 
+// 0. Parent & Guardian Management System
+export interface ParentProfile {
+  id: string;
+  nic: string; // Unique Identifier e.g. 901234567V
+  fullName: string;
+  relationship?: 'Father' | 'Mother' | 'Guardian' | string;
+  mobileNumber: string;
+  whatsappNumber: string;
+  address?: string;
+  occupation?: string;
+  preferredLanguage?: 'Tamil' | 'English' | 'Sinhala';
+  emergencyContact?: string;
+  status: 'Active' | 'Inactive';
+  authUserId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ParentAccount {
+  id: string;
+  parentId: string;
+  username: string; // e.g. PAR901234567V
+  authUserId?: string;
+  mustChangePassword: boolean;
+  isActive: boolean;
+  createdAt?: string;
+  tempPassword?: string; // transiently held in memory for login document/WhatsApp
+}
+
+export interface ParentStudentRelation {
+  id: string;
+  parentId: string;
+  studentId: string;
+  relationship: string; // Father / Mother / Guardian
+  isPrimaryGuardian: boolean;
+  createdAt?: string;
+}
+
+export interface ParentWithChildren extends ParentProfile {
+  account?: ParentAccount;
+  children: Student[];
+}
+
 // 1. Student Management
 export interface Student {
   id: string;
@@ -16,6 +59,9 @@ export interface Student {
   house: 'Royal Gold' | 'Lotus Red' | 'Sapphire Blue' | 'Emerald Green';
   parentName: string;
   parentPhone: string;
+  parentNic?: string;
+  parentId?: string;
+  relationship?: string;
   parentOccupation?: string;
   email: string;
   emergencyContact: string;
@@ -32,14 +78,26 @@ export interface StaffMember {
   id: string;
   employeeId: string;
   fullName: string;
+  firstName?: string;
+  lastName?: string;
+  displayName?: string;
+  photoUrl?: string;
+  gender?: 'Male' | 'Female' | 'Other';
+  dob?: string;
+  nic?: string;
   role: 'Teacher' | 'Principal' | 'Vice Principal' | 'Section Head' | 'Librarian' | 'Accountant' | 'Support Staff';
   department: string;
+  specialization?: string;
   subjectsTaught: string[];
   assignedClasses: string[];
   qualifications: string;
   email: string;
   phone: string;
+  whatsappNumber?: string;
+  address?: string;
   joinDate: string;
+  employmentType?: 'Permanent' | 'Contract' | 'Visiting';
+  status?: 'Active' | 'On Leave' | 'Resigned' | 'Retired' | 'Inactive';
   attendanceStatus: 'Present' | 'Absent' | 'On Leave' | 'Late';
   leaveBalance: {
     casual: number;
@@ -68,10 +126,55 @@ export interface SchoolClass {
   section: string;
   stream: string;
   classTeacher: string;
+  classTeacherId?: string;
   room: string;
   capacity: number;
   studentCount: number;
   academicYear: string;
+}
+
+// 4.1 Relational Class Teacher Assignment
+export interface ClassTeacherAssignment {
+  id: string;
+  classId: string;
+  teacherId: string;
+  academicYearId?: string;
+  academicYear?: string;
+  isActive: boolean;
+  assignedDate?: string;
+  assignedAt?: string;
+  endDate?: string;
+  createdBy?: string;
+  assignedBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// 4.2 Temporary Substitute Teacher Assignment
+export interface SubstituteAssignment {
+  id: string;
+  teacherId: string;
+  teacherName?: string;
+  classId: string;
+  date: string;
+  periodId?: string;
+  reason?: string;
+  assignedBy?: string;
+  createdAt?: string;
+}
+
+// 4.3 Assignment Audit Log
+export interface AssignmentAuditLog {
+  id: string;
+  userId?: string;
+  action: 'ASSIGN' | 'REMOVE' | 'REPLACE' | 'SUBSTITUTE_ASSIGN' | 'ASSIGNED' | 'SUBSTITUTE_ASSIGNED' | string;
+  teacherId?: string;
+  teacherName?: string;
+  classId?: string;
+  academicYearId?: string;
+  details?: string;
+  performedBy?: string;
+  createdAt: string;
 }
 
 // 5. Attendance Management
@@ -81,9 +184,12 @@ export interface AttendanceRecord {
   studentName: string;
   admissionNo: string;
   grade: string;
+  classId?: string;
   date: string;
   status: 'Present' | 'Absent' | 'Late' | 'Excused';
+  markedBy?: string;
   remarks?: string;
+  academicYear?: string;
 }
 
 // 6. Timetable

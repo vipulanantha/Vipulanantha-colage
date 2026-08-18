@@ -1,20 +1,29 @@
 import React, { useState } from 'react';
-import { SchoolClass, Subject } from '../types/sms';
-import { Layers, Plus, Search, Trash2, X, Users, BookOpen, MapPin, UserCheck } from 'lucide-react';
+import { SchoolClass, Subject, StaffMember, ClassTeacherAssignment } from '../types/sms';
+import { Layers, Plus, Search, Trash2, X, Users, BookOpen, MapPin, UserCheck, History, RefreshCw } from 'lucide-react';
+import { TeacherSelect } from './TeacherSelect';
 
 interface AcademicManagerProps {
   classes: SchoolClass[];
   subjects: Subject[];
+  staffList: StaffMember[];
+  assignmentsList?: ClassTeacherAssignment[];
   onAddClass: (cls: Omit<SchoolClass, 'id'>) => void;
   onDeleteClass: (id: string) => void;
+  onOpenHistoryModal?: (cls: SchoolClass) => void;
+  onOpenAssignmentModalForClass?: (cls: SchoolClass) => void;
   canEdit: boolean;
 }
 
 export const AcademicManager: React.FC<AcademicManagerProps> = ({
-  classes,
-  subjects,
+  classes = [],
+  subjects = [],
+  staffList = [],
+  assignmentsList = [],
   onAddClass,
   onDeleteClass,
+  onOpenHistoryModal,
+  onOpenAssignmentModalForClass,
   canEdit,
 }) => {
   const [search, setSearch] = useState('');
@@ -25,22 +34,24 @@ export const AcademicManager: React.FC<AcademicManagerProps> = ({
   const [section, setSection] = useState('A');
   const [stream, setStream] = useState('General Secondary');
   const [classTeacher, setClassTeacher] = useState('');
+  const [classTeacherId, setClassTeacherId] = useState('');
   const [room, setRoom] = useState('Hall 2A');
   const [capacity, setCapacity] = useState(35);
   const [formError, setFormError] = useState('');
 
-  const filteredClasses = classes.filter(
+  const filteredClasses = (classes || []).filter(
     (c) =>
-      c.grade.toLowerCase().includes(search.toLowerCase()) ||
-      c.section.toLowerCase().includes(search.toLowerCase()) ||
-      c.classTeacher.toLowerCase().includes(search.toLowerCase()) ||
-      c.stream.toLowerCase().includes(search.toLowerCase())
+      c &&
+      (c.grade.toLowerCase().includes(search.toLowerCase()) ||
+        c.section.toLowerCase().includes(search.toLowerCase()) ||
+        (c.stream && c.stream.toLowerCase().includes(search.toLowerCase())) ||
+        (c.classTeacher && c.classTeacher.toLowerCase().includes(search.toLowerCase())))
   );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!classTeacher.trim()) {
-      setFormError('Please enter the assigned Class Teacher.');
+    if (!classTeacher.trim() && !classTeacherId) {
+      setFormError('Please select the assigned Class Teacher.');
       return;
     }
 
@@ -49,6 +60,7 @@ export const AcademicManager: React.FC<AcademicManagerProps> = ({
       section,
       stream,
       classTeacher: classTeacher.trim(),
+      classTeacherId: classTeacherId || undefined,
       room,
       capacity: Number(capacity) || 35,
       studentCount: 0,
@@ -56,6 +68,7 @@ export const AcademicManager: React.FC<AcademicManagerProps> = ({
     });
 
     setClassTeacher('');
+    setClassTeacherId('');
     setFormError('');
     setShowAddModal(false);
   };
@@ -101,68 +114,97 @@ export const AcademicManager: React.FC<AcademicManagerProps> = ({
 
       {/* Grid of Classes */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-        {filteredClasses.map((cls) => (
-          <div
-            key={cls.id}
-            className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs hover:border-purple-300 hover:shadow-md transition-all flex flex-col justify-between"
-          >
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-purple-900 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">
-                  {cls.grade} - Section {cls.section}
-                </span>
-                <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                  Year {cls.academicYear}
-                </span>
-              </div>
+        {filteredClasses.map((cls) => {
+          // Resolve live teacher if classTeacherId is present
+          const assignedTeacher = staffList.find(
+            (t) => t.id === cls.classTeacherId || t.employeeId === cls.classTeacherId
+          );
+          const teacherName = assignedTeacher ? `${assignedTeacher.fullName} (${assignedTeacher.employeeId})` : cls.classTeacher;
 
-              <h3 className="font-bold text-slate-900 text-sm">{cls.stream}</h3>
-
-              <div className="mt-3 pt-3 border-t border-slate-100 space-y-2 text-xs text-slate-600">
-                <div className="flex items-center space-x-2">
-                  <UserCheck className="w-3.5 h-3.5 text-purple-700 shrink-0" />
-                  <span>
-                    Class Master: <strong className="text-slate-800">{cls.classTeacher}</strong>
+          return (
+            <div
+              key={cls.id}
+              className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs hover:border-purple-300 hover:shadow-md transition-all flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-purple-900 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">
+                    {cls.grade} - Section {cls.section}
+                  </span>
+                  <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                    Year {cls.academicYear}
                   </span>
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span>
-                    Location: <strong className="text-slate-800">{cls.room}</strong>
-                  </span>
-                </div>
+                <h3 className="font-bold text-slate-900 text-sm">{cls.stream}</h3>
 
-                <div className="flex items-center justify-between pt-1">
-                  <span className="flex items-center space-x-1 text-slate-500">
-                    <Users className="w-3.5 h-3.5 text-slate-400" />
+                <div className="mt-3 pt-3 border-t border-slate-100 space-y-2 text-xs text-slate-600">
+                  <div className="flex items-center space-x-2">
+                    <UserCheck className="w-3.5 h-3.5 text-purple-700 shrink-0" />
                     <span>
-                      Enrolled: <strong>{cls.studentCount} / {cls.capacity}</strong>
+                      Class Master: <strong className="text-slate-800">{teacherName}</strong>
                     </span>
-                  </span>
-                  <div className="w-24 bg-slate-100 rounded-full h-2 overflow-hidden">
-                    <div
-                      className="bg-purple-900 h-2 rounded-full"
-                      style={{ width: `${Math.min((cls.studentCount / cls.capacity) * 100, 100)}%` }}
-                    />
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span>
+                      Location: <strong className="text-slate-800">{cls.room}</strong>
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="flex items-center space-x-1 text-slate-500">
+                      <Users className="w-3.5 h-3.5 text-slate-400" />
+                      <span>
+                        Enrolled: <strong>{cls.studentCount} / {cls.capacity}</strong>
+                      </span>
+                    </span>
+                    <div className="w-24 bg-slate-100 rounded-full h-2 overflow-hidden">
+                      <div
+                        className="bg-purple-900 h-2 rounded-full"
+                        style={{ width: `${Math.min((cls.studentCount / cls.capacity) * 100, 100)}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {canEdit && (
-              <div className="mt-3 pt-2 border-t border-slate-100 flex justify-end">
-                <button
-                  onClick={() => onDeleteClass(cls.id)}
-                  className="text-xs text-rose-600 hover:text-rose-800 flex items-center space-x-1 font-medium p-1 hover:bg-rose-50 rounded"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Delete Class</span>
-                </button>
+              <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
+                {onOpenHistoryModal && (
+                  <button
+                    onClick={() => onOpenHistoryModal(cls)}
+                    className="text-xs text-purple-900 font-bold hover:text-purple-700 flex items-center space-x-1 cursor-pointer"
+                  >
+                    <History className="w-3.5 h-3.5 text-purple-700" />
+                    <span>View History</span>
+                  </button>
+                )}
+
+                {canEdit && (
+                  <div className="flex items-center space-x-1">
+                    {onOpenAssignmentModalForClass && (
+                      <button
+                        onClick={() => onOpenAssignmentModalForClass(cls)}
+                        className="text-xs text-purple-900 bg-purple-50 hover:bg-purple-100 px-2 py-1 rounded border border-purple-200 font-bold flex items-center space-x-0.5 cursor-pointer"
+                      >
+                        <RefreshCw className="w-3 h-3 text-purple-700" />
+                        <span>Change Teacher</span>
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => onDeleteClass(cls.id)}
+                      className="text-xs text-rose-600 hover:text-rose-800 flex items-center space-x-1 font-medium p-1 hover:bg-rose-50 rounded cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        ))}
+            </div>
+          );
+        })}
       </div>
 
       {/* Add Class Modal */}
@@ -230,17 +272,17 @@ export const AcademicManager: React.FC<AcademicManagerProps> = ({
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Class Teacher *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Mr. K. Rajendran"
-                  value={classTeacher}
-                  onChange={(e) => setClassTeacher(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl"
-                />
-              </div>
+              <TeacherSelect
+                label="Assigned Class Teacher *"
+                teachers={staffList}
+                value={classTeacherId || classTeacher}
+                onChange={(id, t) => {
+                  setClassTeacherId(id);
+                  if (t) setClassTeacher(t.fullName);
+                }}
+                placeholder="Search & select teacher master..."
+                required
+              />
 
               <div className="grid grid-cols-2 gap-3">
                 <div>

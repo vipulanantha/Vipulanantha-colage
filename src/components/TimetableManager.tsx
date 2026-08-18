@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { TimetablePeriod, SchoolClass, StaffMember } from '../types/sms';
 import { Calendar, Plus, Clock, MapPin, UserCheck, X } from 'lucide-react';
+import { TeacherSelect } from './TeacherSelect';
 
 interface TimetableManagerProps {
   periods: TimetablePeriod[];
@@ -13,7 +14,7 @@ interface TimetableManagerProps {
 export const TimetableManager: React.FC<TimetableManagerProps> = ({
   periods,
   classes,
-  staff,
+  staff = [],
   onAddPeriod,
   canEdit,
 }) => {
@@ -26,6 +27,7 @@ export const TimetableManager: React.FC<TimetableManagerProps> = ({
   const [time, setTime] = useState('07:45 - 08:30 AM');
   const [subject, setSubject] = useState('Pure Mathematics');
   const [teacher, setTeacher] = useState(staff[0]?.fullName || 'Mr. K. Rajendran');
+  const [teacherId, setTeacherId] = useState(staff[0]?.id || '');
   const [room, setRoom] = useState('Hall 3A');
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -42,6 +44,7 @@ export const TimetableManager: React.FC<TimetableManagerProps> = ({
       time,
       subject,
       teacher,
+      teacherId: teacherId || undefined,
       room,
       grade: selectedClass === 'All' ? 'Grade 11-A' : selectedClass,
       status: 'Upcoming',
@@ -85,7 +88,7 @@ export const TimetableManager: React.FC<TimetableManagerProps> = ({
             <button
               key={d}
               onClick={() => setSelectedDay(d)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                 selectedDay === d
                   ? 'bg-purple-900 text-white shadow-xs'
                   : 'text-slate-600 hover:bg-slate-100'
@@ -123,56 +126,63 @@ export const TimetableManager: React.FC<TimetableManagerProps> = ({
             <p className="text-xs text-slate-500 mt-1">Click "+ Allocate Period" to assign curriculum subject and lecturer.</p>
           </div>
         ) : (
-          filteredPeriods.map((p) => (
-            <div
-              key={p.id}
-              className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs hover:border-purple-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-            >
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 rounded-xl bg-purple-50 border border-purple-200 flex flex-col items-center justify-center shrink-0">
-                  <span className="text-[10px] text-purple-700 font-bold uppercase">Period</span>
-                  <span className="text-lg font-bold text-purple-950 leading-none">{p.periodNumber}</span>
+          filteredPeriods.map((p) => {
+            const assignedTeacher = staff.find(
+              (t) => t.id === p.teacherId || t.employeeId === p.teacherId
+            );
+            const teacherDisplayName = assignedTeacher ? `${assignedTeacher.fullName} (${assignedTeacher.employeeId})` : p.teacher;
+
+            return (
+              <div
+                key={p.id}
+                className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs hover:border-purple-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+              >
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 rounded-xl bg-purple-50 border border-purple-200 flex flex-col items-center justify-center shrink-0">
+                    <span className="text-[10px] text-purple-700 font-bold uppercase">Period</span>
+                    <span className="text-lg font-bold text-purple-950 leading-none">{p.periodNumber}</span>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <h3 className="font-bold text-slate-900 text-sm">{p.subject}</h3>
+                      <span className="text-[10px] font-mono font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
+                        {p.grade}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-3 text-xs text-slate-500 mt-1">
+                      <span className="flex items-center space-x-1">
+                        <Clock className="w-3.5 h-3.5 text-purple-700" />
+                        <span>{p.time}</span>
+                      </span>
+                      <span className="flex items-center space-x-1">
+                        <UserCheck className="w-3.5 h-3.5 text-slate-400" />
+                        <strong className="text-slate-700 font-semibold">{teacherDisplayName}</strong>
+                      </span>
+                      <span className="flex items-center space-x-1">
+                        <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                        <span>{p.room}</span>
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h3 className="font-bold text-slate-900 text-sm">{p.subject}</h3>
-                    <span className="text-[10px] font-mono font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
-                      {p.grade}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-3 text-xs text-slate-500 mt-1">
-                    <span className="flex items-center space-x-1">
-                      <Clock className="w-3.5 h-3.5 text-purple-700" />
-                      <span>{p.time}</span>
-                    </span>
-                    <span className="flex items-center space-x-1">
-                      <UserCheck className="w-3.5 h-3.5 text-slate-400" />
-                      <strong className="text-slate-700 font-semibold">{p.teacher}</strong>
-                    </span>
-                    <span className="flex items-center space-x-1">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{p.room}</span>
-                    </span>
-                  </div>
+                <div className="flex items-center justify-end space-x-2 shrink-0">
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                      p.status === 'In Progress'
+                        ? 'bg-emerald-100 text-emerald-800 animate-pulse'
+                        : p.status === 'Completed'
+                        ? 'bg-slate-100 text-slate-600'
+                        : 'bg-amber-100 text-amber-800'
+                    }`}
+                  >
+                    {p.status}
+                  </span>
                 </div>
               </div>
-
-              <div className="flex items-center justify-end space-x-2 shrink-0">
-                <span
-                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                    p.status === 'In Progress'
-                      ? 'bg-emerald-100 text-emerald-800 animate-pulse'
-                      : p.status === 'Completed'
-                      ? 'bg-slate-100 text-slate-600'
-                      : 'bg-amber-100 text-amber-800'
-                  }`}
-                >
-                  {p.status}
-                </span>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -185,7 +195,7 @@ export const TimetableManager: React.FC<TimetableManagerProps> = ({
                 <Calendar className="w-5 h-5 text-purple-900" />
                 <h3 className="text-base font-bold text-slate-900 font-cinzel">Allocate Timetable Period</h3>
               </div>
-              <button onClick={() => setShowAddModal(false)} className="p-1 text-slate-400 hover:text-slate-700">
+              <button onClick={() => setShowAddModal(false)} className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -232,20 +242,17 @@ export const TimetableManager: React.FC<TimetableManagerProps> = ({
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Assigned Teacher</label>
-                <select
-                  value={teacher}
-                  onChange={(e) => setTeacher(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl"
-                >
-                  {staff.map((st) => (
-                    <option key={st.id} value={st.fullName}>
-                      {st.fullName} ({st.department})
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <TeacherSelect
+                label="Assigned Teacher Master *"
+                teachers={staff}
+                value={teacherId || teacher}
+                onChange={(id, t) => {
+                  setTeacherId(id);
+                  if (t) setTeacher(t.fullName);
+                }}
+                placeholder="Search teacher for timetable..."
+                required
+              />
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -272,13 +279,13 @@ export const TimetableManager: React.FC<TimetableManagerProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold"
+                  className="flex-1 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 rounded-xl bg-[#2A0845] hover:bg-[#3B185F] text-white font-bold"
+                  className="flex-1 py-2.5 rounded-xl bg-[#2A0845] hover:bg-[#3B185F] text-white font-bold cursor-pointer"
                 >
                   Assign Period
                 </button>

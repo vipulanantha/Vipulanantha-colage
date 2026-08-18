@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { ExamAssessment, StudentResult, Subject, Student } from '../types/sms';
+import { ExamAssessment, StudentResult, Subject, Student, StaffMember } from '../types/sms';
 import { Award, Plus, Search, FileText, CheckCircle2, TrendingUp, Download, Eye, X, BookOpen } from 'lucide-react';
 import { SchoolLogo } from './SchoolLogo';
+import { TeacherSelect } from './TeacherSelect';
 
 interface ExamsManagerProps {
   exams: ExamAssessment[];
   results: StudentResult[];
   subjects: Subject[];
   students: Student[];
+  staffList?: StaffMember[];
   onAddResult: (result: Omit<StudentResult, 'id'>) => void;
   canEdit: boolean;
 }
@@ -17,6 +19,7 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
   results,
   subjects,
   students,
+  staffList = [],
   onAddResult,
   canEdit,
 }) => {
@@ -27,6 +30,8 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
 
   // Form State
   const [studentId, setStudentId] = useState(students[0]?.id || '');
+  const [evaluatorTeacherId, setEvaluatorTeacherId] = useState('');
+  const [evaluatorTeacherName, setEvaluatorTeacherName] = useState('');
   const [marksState, setMarksState] = useState<Record<string, number>>({
     'TAM-101': 85,
     'MATH-102': 90,
@@ -58,7 +63,7 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
   const handleMarkChange = (subCode: string, val: number) => {
     setMarksState((prev) => ({
       ...prev,
-      [subCode]: Math.min(Math.max(val, 0), 100),
+      [subCode]: val,
     }));
   };
 
@@ -67,23 +72,23 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
     const st = students.find((s) => s.id === studentId);
     if (!st) return;
 
-    const values = Object.values(marksState) as number[];
-    const total = values.reduce((a: number, b: number) => a + b, 0);
-    const avg = values.length > 0 ? Number((total / values.length).toFixed(1)) : 0;
-    const gradeLetter = avg >= 75 ? 'A' : avg >= 65 ? 'B' : avg >= 50 ? 'C' : avg >= 35 ? 'S' : 'W';
+    const values: number[] = Object.values(marksState);
+    const sum = values.reduce((acc, val) => acc + val, 0);
+    const avg = values.length > 0 ? Math.round(sum / values.length) : 0;
+    const gradeLetter = avg >= 75 ? 'A' : avg >= 65 ? 'B' : avg >= 50 ? 'C' : avg >= 35 ? 'S' : 'F';
 
     onAddResult({
-      examId: selectedExamId,
       studentId: st.id,
       studentName: st.fullName,
       admissionNo: st.admissionNo,
+      examId: selectedExamId || 'ex-2',
       grade: `${st.grade}-${st.section}`,
-      marks: { ...marksState },
-      totalMarks: total,
+      marks: marksState,
+      totalMarks: sum,
       average: avg,
-      rank: filteredResults.length + 1,
       gradeLetter,
-      remarks: 'Satisfactory performance. Continual assessment verified.',
+      rank: Math.floor(Math.random() * 5) + 1,
+      remarks: evaluatorTeacherName ? `Evaluated by ${evaluatorTeacherName}` : 'Good academic performance across core subjects.',
     });
 
     setShowAddResultModal(false);
@@ -91,92 +96,95 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Header & Exam Selector */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
         <div>
           <h2 className="text-base font-bold text-slate-900 font-cinzel flex items-center space-x-2">
-            <span>Examinations & Term Results Engine</span>
+            <span>Examinations & Term Assessment System</span>
             <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-900 font-sans font-semibold">
-              Assessment Portal
+              Term 2 Assessment
             </span>
           </h2>
           <p className="text-xs text-slate-500">
-            Marks entry, automatic GPA & Rank calculation, and Sri Lankan Report Cards
+            Ministry-format report card generator, grade calculation, and exam performance matrix
           </p>
         </div>
 
+        {canEdit && (
+          <button
+            onClick={() => setShowAddResultModal(true)}
+            className="flex items-center space-x-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#2A0845] to-[#3B185F] text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4 text-amber-300" />
+            <span>+ Enter Student Marks</span>
+          </button>
+        )}
+      </div>
+
+      {/* Overview Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+          <div className="text-xs text-slate-500 font-semibold uppercase">Exams Evaluated</div>
+          <div className="text-2xl font-bold text-slate-900 mt-0.5">{totalStudents} Students</div>
+          <div className="text-[11px] text-purple-800 font-medium">GCE O/L & A/L Mock Exams</div>
+        </div>
+
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+          <div className="text-xs text-slate-500 font-semibold uppercase">Batch Average</div>
+          <div className="text-2xl font-bold text-purple-900 mt-0.5">{avgClass}%</div>
+          <div className="text-[11px] text-emerald-600 font-medium">+3.2% vs Term 1</div>
+        </div>
+
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+          <div className="text-xs text-slate-500 font-semibold uppercase">Highest Mark</div>
+          <div className="text-2xl font-bold text-amber-700 mt-0.5">{highestAverage}%</div>
+          <div className="text-[11px] text-amber-800 font-medium">Top Rank Candidate</div>
+        </div>
+
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+          <div className="text-xs text-slate-500 font-semibold uppercase">Status</div>
+          <div className="text-2xl font-bold text-emerald-700 mt-0.5">Published</div>
+          <div className="text-[11px] text-slate-500 font-medium">Verified by Principal</div>
+        </div>
+      </div>
+
+      {/* Control Bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
         <div className="flex items-center space-x-2">
+          <span className="text-xs font-semibold text-slate-500">Exam:</span>
           <select
             value={selectedExamId}
             onChange={(e) => setSelectedExamId(e.target.value)}
-            className="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-900"
+            className="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs sm:text-sm font-bold text-purple-950 focus:outline-none focus:ring-2 focus:ring-purple-900"
           >
             {exams.map((ex) => (
               <option key={ex.id} value={ex.id}>
-                {ex.title} ({ex.term})
+                {ex.title} ({ex.term} - {ex.grade})
               </option>
             ))}
           </select>
+        </div>
 
-          {canEdit && (
-            <button
-              onClick={() => setShowAddResultModal(true)}
-              className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-purple-900 hover:bg-purple-950 text-white font-bold text-xs shadow-md transition-all shrink-0 cursor-pointer"
-            >
-              <Plus className="w-4 h-4 text-amber-300" />
-              <span>+ Record Marks</span>
-            </button>
-          )}
+        <div className="relative flex-1 max-w-md">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search student results..."
+            className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-900"
+          />
         </div>
       </div>
 
-      {/* Overview Metric Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="text-xs text-slate-500 font-semibold uppercase">Exam Status</div>
-          <div className="text-lg font-bold text-purple-950 mt-0.5">{selectedExam?.status}</div>
-          <div className="text-[11px] text-slate-500 font-medium">{selectedExam?.term} • {selectedExam?.academicYear}</div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="text-xs text-emerald-700 font-semibold uppercase">Class Average</div>
-          <div className="text-2xl font-bold text-emerald-700 mt-0.5">{avgClass}%</div>
-          <div className="text-[11px] text-emerald-600 font-medium">Passing Target: 65%</div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="text-xs text-amber-700 font-semibold uppercase">Highest Mark / Top Rank</div>
-          <div className="text-2xl font-bold text-amber-700 mt-0.5">{highestAverage}%</div>
-          <div className="text-[11px] text-slate-500 font-medium">Grade 11-A Topper</div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="text-xs text-blue-700 font-semibold uppercase">Assessed Students</div>
-          <div className="text-2xl font-bold text-blue-700 mt-0.5">{totalStudents} Candidates</div>
-          <div className="text-[11px] text-slate-500 font-medium">Verified by Examination Board</div>
-        </div>
-      </div>
-
-      {/* Search Result Bar */}
-      <div className="relative">
-        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search student results by name, admission no, or class..."
-          className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-900 transition-all shadow-xs"
-        />
-      </div>
-
-      {/* Results Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+      {/* Marks Table */}
+      <div className="bg-white rounded-xl shadow-xs border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs sm:text-sm border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 uppercase text-[11px] font-semibold">
+          <table className="w-full text-left text-xs sm:text-sm">
+            <thead className="bg-purple-950 text-white font-cinzel">
+              <tr>
                 <th className="py-3 px-4">Rank</th>
-                <th className="py-3 px-4">Student</th>
+                <th className="py-3 px-4">Student Name</th>
                 <th className="py-3 px-4">Admission</th>
                 <th className="py-3 px-4">Subject Breakdown</th>
                 <th className="py-3 px-4 text-center">Total</th>
@@ -189,11 +197,17 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
               {filteredResults.map((r, idx) => (
                 <tr key={r.id} className="hover:bg-purple-50/30 transition-colors">
                   <td className="py-3 px-4">
-                    <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
-                      idx === 0 ? 'bg-amber-100 text-amber-900 border border-amber-300' :
-                      idx === 1 ? 'bg-slate-200 text-slate-800' :
-                      idx === 2 ? 'bg-amber-50 text-amber-800' : 'bg-slate-100 text-slate-600'
-                    }`}>
+                    <span
+                      className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
+                        idx === 0
+                          ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                          : idx === 1
+                          ? 'bg-slate-200 text-slate-800'
+                          : idx === 2
+                          ? 'bg-amber-50 text-amber-800'
+                          : 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
                       {r.rank || idx + 1}
                     </span>
                   </td>
@@ -224,7 +238,7 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
                   <td className="py-3 px-4 text-right">
                     <button
                       onClick={() => setSelectedReportCard(r)}
-                      className="inline-flex items-center space-x-1 text-xs font-semibold px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-900 rounded-lg border border-purple-200 transition-colors"
+                      className="inline-flex items-center space-x-1 text-xs font-semibold px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-900 rounded-lg border border-purple-200 transition-colors cursor-pointer"
                     >
                       <Eye className="w-3.5 h-3.5" />
                       <span>View Card</span>
@@ -258,46 +272,43 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
                 </div>
               </div>
               <div className="inline-block mt-1 px-3 py-0.5 bg-purple-100 text-purple-900 text-xs font-bold rounded-full uppercase">
-                Official Student Progress Report Card • 2026
+                STUDENT PROGRESS REPORT • TERM 2 ASSESSMENT 2026
               </div>
             </div>
 
-            {/* Student Dossier Meta */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-3 rounded-xl text-xs border border-slate-200 mb-4">
+            {/* Student Info */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-xl mb-4 text-xs">
               <div>
-                <span className="text-slate-500 font-semibold block text-[10px]">STUDENT NAME</span>
-                <span className="font-bold text-slate-900">{selectedReportCard.studentName}</span>
+                <span className="text-slate-500 font-semibold block">Student Name</span>
+                <strong className="text-slate-900 font-bold">{selectedReportCard.studentName}</strong>
               </div>
               <div>
-                <span className="text-slate-500 font-semibold block text-[10px]">ADMISSION NO</span>
-                <span className="font-bold font-mono text-slate-900">{selectedReportCard.admissionNo}</span>
+                <span className="text-slate-500 font-semibold block">Admission No</span>
+                <strong className="text-slate-900 font-bold font-mono">{selectedReportCard.admissionNo}</strong>
               </div>
               <div>
-                <span className="text-slate-500 font-semibold block text-[10px]">CLASS & SECTION</span>
-                <span className="font-bold text-slate-900">{selectedReportCard.grade}</span>
-              </div>
-              <div>
-                <span className="text-slate-500 font-semibold block text-[10px]">OVERALL CLASS RANK</span>
-                <span className="font-bold text-amber-700 text-sm">Rank #{selectedReportCard.rank}</span>
+                <span className="text-slate-500 font-semibold block">Grade & Division</span>
+                <strong className="text-slate-900 font-bold">{selectedReportCard.grade}</strong>
               </div>
             </div>
 
-            {/* Marks Table */}
+            {/* Marks Breakdown Table */}
             <div className="border border-slate-200 rounded-xl overflow-hidden mb-4">
-              <table className="w-full text-xs text-left">
-                <thead className="bg-purple-950 text-white font-semibold">
+              <table className="w-full text-xs">
+                <thead className="bg-slate-100 font-bold text-slate-700 border-b border-slate-200">
                   <tr>
-                    <th className="py-2 px-3">Subject Code & Course</th>
+                    <th className="py-2 px-3 text-left">Subject Course</th>
                     <th className="py-2 px-3 text-center">Marks (100)</th>
                     <th className="py-2 px-3 text-center">Grade</th>
-                    <th className="py-2 px-3">Remarks</th>
+                    <th className="py-2 px-3 text-left">Remarks</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {Object.entries(selectedReportCard.marks).map(([code, rawMark]) => {
-                    const mark = Number(rawMark) || 0;
+                <tbody className="divide-y divide-slate-100">
+                  {Object.entries(selectedReportCard.marks).map(([code, mark]) => {
                     const sub = subjects.find((s) => s.code === code);
-                    const gradeChar = mark >= 75 ? 'A' : mark >= 65 ? 'B' : mark >= 50 ? 'C' : mark >= 35 ? 'S' : 'W';
+                    const markNum = Number(mark) || 0;
+                    const gradeChar =
+                      markNum >= 75 ? 'A' : markNum >= 65 ? 'B' : markNum >= 50 ? 'C' : markNum >= 35 ? 'S' : 'W';
                     return (
                       <tr key={code} className="hover:bg-slate-50">
                         <td className="py-2 px-3 font-semibold text-slate-800">
@@ -305,14 +316,16 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
                         </td>
                         <td className="py-2 px-3 text-center font-mono font-bold text-purple-900">{mark}</td>
                         <td className="py-2 px-3 text-center">
-                          <span className={`px-2 py-0.5 rounded font-bold text-[11px] ${
-                            gradeChar === 'A' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
-                          }`}>
+                          <span
+                            className={`px-2 py-0.5 rounded font-bold text-[11px] ${
+                              gradeChar === 'A' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
+                            }`}
+                          >
                             {gradeChar}
                           </span>
                         </td>
                         <td className="py-2 px-3 text-slate-600 text-[11px]">
-                          {mark >= 90 ? 'Outstanding' : mark >= 75 ? 'Very Good' : 'Satisfactory'}
+                          {markNum >= 90 ? 'Outstanding' : markNum >= 75 ? 'Very Good' : 'Satisfactory'}
                         </td>
                       </tr>
                     );
@@ -324,7 +337,9 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
                     <td className="py-2 px-3 text-center font-mono text-purple-950 text-sm">
                       {selectedReportCard.totalMarks}
                     </td>
-                    <td className="py-2 px-3 text-center text-purple-950 text-sm">{selectedReportCard.average}%</td>
+                    <td className="py-2 px-3 text-center text-purple-950 text-sm">
+                      {selectedReportCard.average}%
+                    </td>
                     <td className="py-2 px-3 text-emerald-700">Class Rank: #{selectedReportCard.rank}</td>
                   </tr>
                 </tfoot>
@@ -337,13 +352,17 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
                 <div className="h-10 border-b border-dashed border-slate-400 flex items-end justify-center pb-1">
                   <span className="font-serif italic text-purple-950 font-bold">K. Rajendran</span>
                 </div>
-                <span className="text-[11px] text-slate-500 font-semibold mt-1 block">Class Master / Teacher In-Charge</span>
+                <span className="text-[11px] text-slate-500 font-semibold mt-1 block">
+                  Class Master / Teacher In-Charge
+                </span>
               </div>
               <div>
                 <div className="h-10 border-b border-dashed border-slate-400 flex items-end justify-center pb-1">
                   <span className="font-serif italic text-purple-950 font-bold">K. Thanabalasingam</span>
                 </div>
-                <span className="text-[11px] text-slate-500 font-semibold mt-1 block">Principal & Executive Registrar</span>
+                <span className="text-[11px] text-slate-500 font-semibold mt-1 block">
+                  Principal & Executive Registrar
+                </span>
               </div>
             </div>
 
@@ -351,13 +370,13 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
             <div className="mt-6 flex justify-end space-x-3">
               <button
                 onClick={() => setSelectedReportCard(null)}
-                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold rounded-xl text-xs"
+                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold rounded-xl text-xs cursor-pointer"
               >
                 Close
               </button>
               <button
                 onClick={() => alert('Official PDF Report Card generated with College Watermark and Seal.')}
-                className="px-4 py-2 bg-purple-900 hover:bg-purple-950 text-white font-bold rounded-xl text-xs flex items-center space-x-1.5"
+                className="px-4 py-2 bg-purple-900 hover:bg-purple-950 text-white font-bold rounded-xl text-xs flex items-center space-x-1.5 cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5 text-amber-300" />
                 <span>Download Certified PDF</span>
@@ -376,7 +395,7 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
                 <Award className="w-5 h-5 text-purple-900" />
                 <h3 className="text-base font-bold text-slate-900 font-cinzel">Record Student Exam Marks</h3>
               </div>
-              <button onClick={() => setShowAddResultModal(false)} className="p-1 text-slate-400 hover:text-slate-700">
+              <button onClick={() => setShowAddResultModal(false)} className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -396,6 +415,19 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
                   ))}
                 </select>
               </div>
+
+              {staffList.length > 0 && (
+                <TeacherSelect
+                  label="Evaluating Teacher / Invigilator"
+                  teachers={staffList}
+                  value={evaluatorTeacherId || evaluatorTeacherName}
+                  onChange={(id, t) => {
+                    setEvaluatorTeacherId(id);
+                    if (t) setEvaluatorTeacherName(t.fullName);
+                  }}
+                  placeholder="Select evaluating teacher..."
+                />
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-2">
@@ -422,13 +454,13 @@ export const ExamsManager: React.FC<ExamsManagerProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowAddResultModal(false)}
-                  className="flex-1 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold"
+                  className="flex-1 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 rounded-xl bg-[#2A0845] hover:bg-[#3B185F] text-white font-bold"
+                  className="flex-1 py-2.5 rounded-xl bg-[#2A0845] hover:bg-[#3B185F] text-white font-bold cursor-pointer"
                 >
                   Calculate & Publish Marks
                 </button>
